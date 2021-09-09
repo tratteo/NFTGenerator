@@ -43,13 +43,13 @@ namespace NFTGenerator
         {
             if (!IsSoftwareInstalled(name, null))
             {
-                Logger.LogInfo("Missing dependency found: ImageMagick not installed");
+                Logger.LogInfo("Missing dependency found: " + name + " not installed");
                 Regex reg = new Regex("ImageMagick");
                 foreach (string dep in deps)
                 {
                     if (reg.IsMatch(dep))
                     {
-                        Logger.LogInfo("Installing ImageMagick");
+                        Logger.LogInfo("Installing " + name);
                         using Process proc = Process.Start(dep);
                         proc.EnableRaisingEvents = true;
                         proc.Exited += (object sender, EventArgs e) =>
