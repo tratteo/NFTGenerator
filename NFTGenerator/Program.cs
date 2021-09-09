@@ -1,75 +1,58 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
+using System.Configuration;
 
 namespace NFTGenerator
 {
     internal class Program
     {
-        private static List<Asset>[] layers;
-        private static Random random = new Random();
+        private const int AMOUNT_TO_MINT = 4;
+        private static Generator generator;
+        private static Filesystem filesystem;
 
         private static void Main(string[] args)
         {
             Console.WriteLine("NFT Generator");
-            LoadLayers();
+            Console.WriteLine(GetSetting<bool>("test"));
+            filesystem = new Filesystem(GetSetting<string>("fileSystemPath"));
+            filesystem.Load();
+            if (!filesystem.Verify(AMOUNT_TO_MINT))
+            {
+                return;
+            }
+            generator = new Generator(filesystem);
             Test();
         }
 
         private static void Test()
         {
-            for (int j = 0; j < 10; j++)
+            for (int j = 0; j < AMOUNT_TO_MINT; j++)
             {
-                string resPath = "filesystem/results/res_" + j + ".gif";
-                List<Asset> toMerge = new List<Asset>();
-                for (int i = 0; i < layers.Length; i++)
+                generator.GenerateSingle(j);
+            }
+            foreach (int[] hash in generator.GeneratedHashes)
+            {
+                foreach (int i in hash)
                 {
-                    //TODO get random asset inside each layer
-                    toMerge.Add(layers[i][random.Next(0, layers[i].Count)]);
+                    Console.Write(i);
                 }
-                //At this point i have all the assets to be merged
-                if (toMerge.Count < 2)
-                {
-                    throw new Exception("Unable to merge less than 2 assets!");
-                }
-                // Create the first gif
-                GifHandler.MergeGifs(toMerge[0].AssetAbsolutePath, toMerge[1].AssetAbsolutePath, resPath);
-                for (int i = 2; i < toMerge.Count; i++)
-                {
-                    GifHandler.MergeGifs(resPath, toMerge[i].AssetAbsolutePath);
-                }
+                Console.Write("\n\n");
             }
         }
 
-        private static void LoadLayers()
+        private static T GetSetting<T>(string key, T defaultValue = default(T))
         {
-            Console.WriteLine("Loading layers");
-            string[] dirs = Directory.GetDirectories("filesystem/layers");
-            layers = new List<Asset>[dirs.Length];
-            for (int i = 0; i < dirs.Length; i++)
+            string val = ConfigurationManager.AppSettings[key] ?? "";
+            T result = defaultValue;
+            if (!string.IsNullOrEmpty(val))
             {
-                Console.Write(".");
-                layers[i] = new List<Asset>();
-                string[] assets = Directory.GetDirectories(dirs[i]);
-                foreach (string assetPath in assets)
+                T typeDefault = default(T);
+                if (typeof(T) == typeof(string))
                 {
-                    layers[i].Add(new Asset(assetPath));
+                    typeDefault = (T)(object)string.Empty;
                 }
+                result = (T)Convert.ChangeType(val, typeDefault.GetType());
             }
-            Console.WriteLine("\nLayers loaded");
-            for (int i = 0; i < layers.Length; i++)
-            {
-                Console.WriteLine("LAYER " + i);
-                foreach (Asset asset in layers[i])
-                {
-                    Console.WriteLine(asset);
-                }
-            }
+            return result;
         }
-
-        //Workflow
-        // 1. Load all assets into predefined data types
-        // 2. Layers are lists of Assets
-        // 3. Load all layers into list
     }
 }

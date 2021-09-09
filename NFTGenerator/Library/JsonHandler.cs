@@ -13,22 +13,22 @@ namespace NFTGenerator
             return metadata;
         }
 
-        public static void Serialize(Metadata metadata, string path = "metadata.json")
+        public static void Serialize<T>(T metadata, string path = "metadata.json")
         {
-            string jsonString = JsonSerializer.Serialize(metadata);
+            string jsonString = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(path, jsonString);
         }
 
         public static class Async
         {
-            public static async ValueTask<Metadata> Deserialize(string path = "metadata.json")
+            public static async ValueTask<T> Deserialize<T>(string path = "metadata.json")
             {
                 using FileStream openStream = File.OpenRead(path);
-                Metadata metadata = await JsonSerializer.DeserializeAsync<Metadata>(openStream);
+                T metadata = await JsonSerializer.DeserializeAsync<T>(openStream);
                 return metadata;
             }
 
-            public static async Task Serialize(Metadata metadata, string path = "metadata.json")
+            public static async Task Serialize<T>(T metadata, string path = "metadata.json")
             {
                 using FileStream createStream = File.Create(path);
                 await JsonSerializer.SerializeAsync(createStream, metadata, new JsonSerializerOptions { WriteIndented = true });

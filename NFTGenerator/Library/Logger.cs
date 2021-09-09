@@ -15,14 +15,14 @@ namespace NFTGenerator
                     break;
 
                 case LogType.WARNING:
-                    prefix = "[WARNING]";
+                    prefix = "[WARNING]: ";
                     break;
 
                 case LogType.ERROR:
-                    prefix = "[ERROR]";
+                    prefix = "[ERROR]: ";
                     break;
             }
-            Console.WriteLine(prefix + ": " + log);
+            Console.WriteLine(prefix + log);
         }
     }
 }
