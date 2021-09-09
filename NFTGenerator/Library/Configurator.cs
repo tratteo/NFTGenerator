@@ -22,10 +22,14 @@ namespace NFTGenerator
                 IncludeSubdirectories = false,
                 EnableRaisingEvents = true
             };
-            configWatcher.Changed += (object sender, FileSystemEventArgs e) => ConfigurationManager.RefreshSection("appSettings");
+            configWatcher.Changed += (object sender, FileSystemEventArgs e) =>
+            {
+                ConfigurationManager.RefreshSection("appSettings");
+                ConfigurationManager.RefreshSection("configuration");
+            };
         }
 
-        public static T GetConf<T>(string key, T defaultValue = default)
+        public static T GetSetting<T>(string key, T defaultValue = default)
         {
             string val = ConfigurationManager.AppSettings[key] ?? "";
             T result = defaultValue;

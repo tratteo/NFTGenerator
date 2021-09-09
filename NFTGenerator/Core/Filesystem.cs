@@ -16,7 +16,7 @@ namespace NFTGenerator
 
         public bool Verify(bool verbose = true)
         {
-            int amountToMint = Configurator.GetConf<int>(Configurator.AMOUNT_TO_MINT);
+            int amountToMint = Configurator.GetSetting<int>(Configurator.AMOUNT_TO_MINT);
             if (!loaded) Load();
             if (verbose)
             {
@@ -64,22 +64,22 @@ namespace NFTGenerator
         private bool Layout()
         {
             bool created = false;
-            if (!Directory.Exists(Configurator.GetConf<string>(Configurator.FILESYSTEM_PATH)))
+            if (!Directory.Exists(Configurator.GetSetting<string>(Configurator.FILESYSTEM_PATH)))
             {
-                Directory.CreateDirectory(Configurator.GetConf<string>(Configurator.FILESYSTEM_PATH));
-                Logger.LogInfo("Created FS root directory: " + Configurator.GetConf<string>(Configurator.FILESYSTEM_PATH));
+                Directory.CreateDirectory(Configurator.GetSetting<string>(Configurator.FILESYSTEM_PATH));
+                Logger.LogInfo("Created FS root directory: " + Configurator.GetSetting<string>(Configurator.FILESYSTEM_PATH));
                 created = true;
             }
-            if (!Directory.Exists(Configurator.GetConf<string>(Configurator.FILESYSTEM_PATH) + "\\layers"))
+            if (!Directory.Exists(Configurator.GetSetting<string>(Configurator.FILESYSTEM_PATH) + "\\layers"))
             {
-                Directory.CreateDirectory(Configurator.GetConf<string>(Configurator.FILESYSTEM_PATH) + "\\layers");
-                Logger.LogInfo("Created FS root directory: " + Configurator.GetConf<string>(Configurator.FILESYSTEM_PATH) + "\\layers");
+                Directory.CreateDirectory(Configurator.GetSetting<string>(Configurator.FILESYSTEM_PATH) + "\\layers");
+                Logger.LogInfo("Created FS root directory: " + Configurator.GetSetting<string>(Configurator.FILESYSTEM_PATH) + "\\layers");
                 created = true;
             }
-            if (!Directory.Exists(Configurator.GetConf<string>(Configurator.RESULTS_PATH)))
+            if (!Directory.Exists(Configurator.GetSetting<string>(Configurator.RESULTS_PATH)))
             {
-                Directory.CreateDirectory(Configurator.GetConf<string>(Configurator.RESULTS_PATH));
-                Logger.LogInfo("Created FS root directory: " + Configurator.GetConf<string>(Configurator.RESULTS_PATH));
+                Directory.CreateDirectory(Configurator.GetSetting<string>(Configurator.RESULTS_PATH));
+                Logger.LogInfo("Created FS root directory: " + Configurator.GetSetting<string>(Configurator.RESULTS_PATH));
                 created = true;
             }
             return created;
@@ -89,7 +89,7 @@ namespace NFTGenerator
         {
             Layout();
             Logger.LogInfo("Loading layers");
-            string[] dirs = Directory.GetDirectories(Configurator.GetConf<string>(Configurator.FILESYSTEM_PATH) + "\\layers");
+            string[] dirs = Directory.GetDirectories(Configurator.GetSetting<string>(Configurator.FILESYSTEM_PATH) + "\\layers");
             for (int i = 0; i < dirs.Length; i++)
             {
                 Layer layer = new Layer(dirs[i]);

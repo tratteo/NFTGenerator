@@ -99,7 +99,7 @@ namespace NFTGenerator
                     Description="opens the filesystem folder in the explorer",
                     Delegate = ()=>
                     {
-                        Process.Start("explorer.exe" , AppDomain.CurrentDomain.BaseDirectory + Configurator.GetConf<string>(Configurator.FILESYSTEM_PATH));
+                        Process.Start("explorer.exe" , AppDomain.CurrentDomain.BaseDirectory + Configurator.GetSetting<string>(Configurator.FILESYSTEM_PATH));
                     }
                 },
                 new Command()
@@ -108,7 +108,7 @@ namespace NFTGenerator
                     Description="opens the results folder in the explorer",
                     Delegate = ()=>
                     {
-                        Process.Start("explorer.exe" , AppDomain.CurrentDomain.BaseDirectory + Configurator.GetConf<string>(Configurator.RESULTS_PATH));
+                        Process.Start("explorer.exe" , AppDomain.CurrentDomain.BaseDirectory + Configurator.GetSetting<string>(Configurator.RESULTS_PATH));
                     }
                 },
                 new Command()
@@ -117,7 +117,7 @@ namespace NFTGenerator
                     Description="opens the layers folder in the explorer",
                     Delegate = ()=>
                     {
-                        Process.Start("explorer.exe" , AppDomain.CurrentDomain.BaseDirectory + Configurator.GetConf<string>(Configurator.FILESYSTEM_PATH)+"\\layers");
+                        Process.Start("explorer.exe" , AppDomain.CurrentDomain.BaseDirectory + Configurator.GetSetting<string>(Configurator.FILESYSTEM_PATH)+"\\layers");
                     }
                 }
             });
@@ -127,6 +127,7 @@ namespace NFTGenerator
         {
             Console.Title = "NFTGenerator";
             Logger.LogInfo("----- NFT GENERATOR -----\n\n", ConsoleColor.DarkCyan);
+            DependenciesHandler.Resolve();
             Configurator.LoadConf();
             filesystem = new Filesystem();
             generator = new Generator(filesystem);
@@ -140,7 +141,7 @@ namespace NFTGenerator
 
         private static void Generate()
         {
-            int amountToMint = Configurator.GetConf<int>(Configurator.AMOUNT_TO_MINT);
+            int amountToMint = Configurator.GetSetting<int>(Configurator.AMOUNT_TO_MINT);
             if (amountToMint == 0)
             {
                 Logger.LogWarning("Nothing to generate, amount to mint is set to 0");

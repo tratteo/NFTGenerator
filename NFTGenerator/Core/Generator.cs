@@ -18,7 +18,7 @@ namespace NFTGenerator
         public void GenerateSingle(int index)
         {
             int[] mintedHash = new int[filesystem.Layers.Count];
-            string resPath = Configurator.GetConf<string>(Configurator.RESULTS_PATH) + "/res_" + index + ".gif";
+            string resPath = Configurator.GetSetting<string>(Configurator.RESULTS_PATH) + "/res_" + index + ".gif";
             List<Asset> toMerge = new List<Asset>();
             for (int i = 0; i < filesystem.Layers.Count; i++)
             {
@@ -26,7 +26,7 @@ namespace NFTGenerator
                 Asset pick = filesystem.Layers[i].GetRandom();
                 mintedHash[i] = pick.Id;
                 //We are in last layer and there is a duplicate
-                if (!Configurator.GetConf<bool>(Configurator.ALLOW_DUPLICATES) && i == filesystem.Layers.Count - 1 && !IsHashValid(mintedHash))
+                if (!Configurator.GetSetting<bool>(Configurator.ALLOW_DUPLICATES) && i == filesystem.Layers.Count - 1 && !IsHashValid(mintedHash))
                 {
                     pick = GetLastLayerValidAsset(mintedHash);
                     mintedHash[i] = pick.Id;
