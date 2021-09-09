@@ -18,7 +18,7 @@ namespace NFTGenerator
         public void GenerateSingle(int index)
         {
             int[] mintedHash = new int[filesystem.Layers.Count];
-            string resPath = filesystem.Path + "/results/res_" + index + ".gif";
+            string resPath = Configurator.GetConf<string>(Configurator.RESULTS_PATH) + "/res_" + index + ".gif";
             List<Asset> toMerge = new List<Asset>();
             for (int i = 0; i < filesystem.Layers.Count; i++)
             {
@@ -26,7 +26,7 @@ namespace NFTGenerator
                 Asset pick = filesystem.Layers[i].GetRandom();
                 mintedHash[i] = pick.Id;
                 //We are in last layer and there is a duplicate
-                if (i == filesystem.Layers.Count - 1 && !IsHashValid(mintedHash))
+                if (!Configurator.GetConf<bool>(Configurator.ALLOW_DUPLICATES) && i == filesystem.Layers.Count - 1 && !IsHashValid(mintedHash))
                 {
                     pick = GetLastLayerValidAsset(mintedHash);
                     mintedHash[i] = pick.Id;
@@ -62,7 +62,7 @@ namespace NFTGenerator
                     return asset;
                 }
             }
-            Logger.Log("Wait, WTF, unable to find a last layer available asset, this means that assets in the last layer are less than expected!", Logger.LogType.ERROR);
+            Logger.LogError("Wait, WTF, unable to find a last layer available asset, this means that assets in the last layer are less than expected!");
             return null;
         }
 
@@ -79,13 +79,6 @@ namespace NFTGenerator
                 }
                 return true;
             }).Count <= 0;
-        }
-
-        internal class Options
-        {
-            public bool AllowDuplicates { get; init; }
-
-            public string FileSystemPath { get; init; }
         }
     }
 }

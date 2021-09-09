@@ -1,0 +1,15 @@
+{
+  "Id": "Lorem",
+  "Description": "Lorem ipsum",
+  "Amount": 1,
+  "Attributes": [
+    {
+      "Name": "name1",
+      "Value": "value1"
+    },
+    {
+      "Name": "name2",
+      "Value": "value2"
+    }
+  ]
+}

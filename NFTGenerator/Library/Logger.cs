@@ -4,25 +4,28 @@ namespace NFTGenerator
 {
     internal static class Logger
     {
-        public enum LogType { WARNING, INFO, ERROR }
-
-        public static void Log(string log, LogType type = LogType.INFO)
+        public static void LogInfo(string log = "", ConsoleColor color = ConsoleColor.White, bool newLine = true)
         {
-            string prefix = "";
-            switch (type)
+            Console.ForegroundColor = color;
+            if (newLine)
             {
-                case LogType.INFO:
-                    break;
-
-                case LogType.WARNING:
-                    prefix = "[WARNING]: ";
-                    break;
-
-                case LogType.ERROR:
-                    prefix = "[ERROR]: ";
-                    break;
+                Console.WriteLine(log);
             }
-            Console.WriteLine(prefix + log);
+            else
+            {
+                Console.Write(log);
+            }
+            Console.ForegroundColor = ConsoleColor.White;
+        }
+
+        public static void LogWarning(string log, bool newLine = true)
+        {
+            LogInfo("W: " + log, ConsoleColor.DarkYellow, newLine);
+        }
+
+        public static void LogError(string log, bool newLine = true)
+        {
+            LogInfo("E: " + log, ConsoleColor.Red, newLine);
         }
     }
 }

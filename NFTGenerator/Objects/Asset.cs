@@ -20,7 +20,7 @@ namespace NFTGenerator
             string[] metadata = Directory.GetFiles(resourceAbsolutePath, "*.json");
             if (metadata.Length > 1)
             {
-                Logger.Log("found multiple metadata in path: " + resourceAbsolutePath, Logger.LogType.WARNING);
+                Logger.LogWarning("found multiple metadata in path: " + resourceAbsolutePath);
             }
             else if (metadata.Length <= 0)
             {
@@ -29,7 +29,7 @@ namespace NFTGenerator
             string[] assets = Directory.GetFiles(resourceAbsolutePath, "*.gif");
             if (assets.Length > 1)
             {
-                Logger.Log("found multiple assets in path: " + resourceAbsolutePath, Logger.LogType.WARNING);
+                Logger.LogWarning("found multiple assets in path: " + resourceAbsolutePath);
             }
             else if (assets.Length <= 0)
             {
