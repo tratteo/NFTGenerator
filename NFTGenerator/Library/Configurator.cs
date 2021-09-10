@@ -12,7 +12,7 @@ namespace NFTGenerator
         public const string AMOUNT_TO_MINT = "amountToMint";
         private static FileSystemWatcher configWatcher;
 
-        public static void LoadConf()
+        public static void Load()
         {
             Logger.LogInfo("Loading configuration file and setting up config watcher...");
             configWatcher = new FileSystemWatcher(AppDomain.CurrentDomain.BaseDirectory)

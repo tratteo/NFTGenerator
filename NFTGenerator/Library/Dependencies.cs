@@ -4,13 +4,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace NFTGenerator
 {
-    internal static class DependenciesHandler
+    internal static class Dependencies
     {
         public enum ProgramVersion { x86, x64 }
 

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace NFTGenerator
 {
-    internal static class JsonHandler
+    internal static class Json
     {
         public static T Deserialize<T>(string path = "metadata.json")
         {

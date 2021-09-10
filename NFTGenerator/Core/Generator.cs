@@ -18,7 +18,7 @@ namespace NFTGenerator
         public void GenerateSingle(int index)
         {
             int[] mintedHash = new int[filesystem.Layers.Count];
-            string resPath = Configurator.GetSetting<string>(Configurator.RESULTS_PATH) + "/res_" + index + ".gif";
+            string resPath = Configurator.GetSetting<string>(Configurator.RESULTS_PATH) + "\\res_" + index + filesystem.MediaExtension;
             List<Asset> toMerge = new List<Asset>();
             for (int i = 0; i < filesystem.Layers.Count; i++)
             {
@@ -40,10 +40,10 @@ namespace NFTGenerator
                 throw new Exception("Unable to merge less than 2 assets!");
             }
             // Create the first gif
-            GifHandler.MergeGifs(toMerge[0].AssetAbsolutePath, toMerge[1].AssetAbsolutePath, resPath);
+            Media.ComposeMedia(toMerge[0].AssetAbsolutePath, toMerge[1].AssetAbsolutePath, resPath);
             for (int i = 2; i < toMerge.Count; i++)
             {
-                GifHandler.MergeGifs(resPath, toMerge[i].AssetAbsolutePath);
+                Media.ComposeMedia(resPath, toMerge[i].AssetAbsolutePath, resPath);
             }
             GeneratedHashes.Add(mintedHash);
         }

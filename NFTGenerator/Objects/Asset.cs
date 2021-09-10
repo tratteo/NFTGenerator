@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace NFTGenerator
 {
@@ -26,7 +27,7 @@ namespace NFTGenerator
             {
                 throw new Exception("Metadata missing in folder: " + resourceAbsolutePath);
             }
-            string[] assets = Directory.GetFiles(resourceAbsolutePath, "*.gif");
+            string[] assets = Directory.GetFiles(resourceAbsolutePath, "*.*").Where(s => s.EndsWith(".gif") || s.EndsWith(".jpeg") || s.EndsWith(".png")).ToArray();
             if (assets.Length > 1)
             {
                 Logger.LogWarning("found multiple assets in path: " + resourceAbsolutePath);
@@ -46,7 +47,7 @@ namespace NFTGenerator
                 throw new Exception("Unable to find the assed inside path: " + resourceAbsolutePath);
             }
 
-            Data = JsonHandler.Deserialize<Metadata>(metadataPath);
+            Data = Json.Deserialize<Metadata>(metadataPath);
             AssetAbsolutePath = assetPath;
         }
 

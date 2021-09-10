@@ -1,13 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace NFTGenerator
 {
     internal class Filesystem
     {
-        private bool loaded = false;
-
         public List<Layer> Layers { get; private set; }
+
+        public string MediaExtension { get; private set; } = string.Empty;
 
         public Filesystem()
         {
@@ -16,16 +17,30 @@ namespace NFTGenerator
 
         public bool Verify(bool verbose = true)
         {
+            List<Action> warnings = new List<Action>();
             int amountToMint = Configurator.GetSetting<int>(Configurator.AMOUNT_TO_MINT);
-            if (!loaded) Load();
+            Load(verbose);
             if (verbose)
             {
                 Logger.LogInfo("Verifying whether layers are fucked up or not...");
             }
+            string fileExtension = string.Empty;
             foreach (Layer layer in Layers)
             {
                 int amount = 0;
-                layer.Assets.ForEach((a) => amount += a.Data.Amount);
+                foreach (Asset a in layer.Assets)
+                {
+                    amount += a.Data.Amount;
+                    FileInfo info = new FileInfo(a.AssetAbsolutePath);
+
+                    if (info.Extension != fileExtension && fileExtension != string.Empty)
+                    {
+                        Logger.LogError("Assets are not of the same type at: " + a.AssetAbsolutePath);
+                        return false;
+                    }
+                    fileExtension = info.Extension;
+                }
+                MediaExtension = fileExtension;
                 if (amount < amountToMint)
                 {
                     Logger.LogError("Wrong assets sum in layer: " + layer.Path);
@@ -33,7 +48,7 @@ namespace NFTGenerator
                 }
                 else if (amount > amountToMint)
                 {
-                    Logger.LogWarning("Assets sum in layer: " + layer.Path + " is greater than the AMOUNT_TO_MINT, adjust it if you want amounts in metadata to actually represents probabilities");
+                    warnings.Add(() => Logger.LogWarning("Assets sum in layer: " + layer.Path + " is greater than the AMOUNT_TO_MINT, adjust it if you want amounts in metadata to actually represents probabilities"));
                 }
             }
             if (verbose)
@@ -52,11 +67,16 @@ namespace NFTGenerator
             }
             if (amountToMint == 0)
             {
-                Logger.LogWarning("The amount to mint is set to 0 in the configuration file");
+                warnings.Add(() => Logger.LogWarning("The amount to mint is set to 0 in the configuration file"));
             }
             if (verbose)
             {
-                Logger.LogInfo("Verification process passed\n");
+                Logger.LogInfo("Verification process passed with " + warnings.Count + " warnings");
+                foreach (Action w in warnings)
+                {
+                    w?.Invoke();
+                }
+                Logger.LogInfo();
             }
             return true;
         }
@@ -85,10 +105,14 @@ namespace NFTGenerator
             return created;
         }
 
-        private void Load()
+        private void Load(bool verbose = true)
         {
+            Layers.Clear();
             Layout();
-            Logger.LogInfo("Loading layers");
+            if (verbose)
+            {
+                Logger.LogInfo("Loading layers");
+            }
             string[] dirs = Directory.GetDirectories(Configurator.GetSetting<string>(Configurator.FILESYSTEM_PATH) + "\\layers");
             for (int i = 0; i < dirs.Length; i++)
             {
@@ -101,7 +125,6 @@ namespace NFTGenerator
                 }
                 Layers.Add(layer);
             }
-            loaded = true;
         }
     }
 }
