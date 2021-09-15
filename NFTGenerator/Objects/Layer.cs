@@ -20,7 +20,7 @@ namespace NFTGenerator
 
         public Asset GetRandom()
         {
-            List<Asset> match = Assets.FindAll((a) => a.MintedAmount < a.Data.Amount);
+            List<Asset> match = Assets.FindAll((a) => a.MintedAmount < a.Metadata.Amount);
             if (match.Count <= 0)
             {
                 throw new System.Exception("Wrong error number in layer: " + Path + ", this should never happen");
@@ -30,7 +30,7 @@ namespace NFTGenerator
 
         public bool HasMintableAssets()
         {
-            return Assets.FindAll((a) => a.MintedAmount < a.Data.Amount).Count > 0;
+            return Assets.FindAll((a) => a.MintedAmount < a.Metadata.Amount).Count > 0;
         }
     }
 }

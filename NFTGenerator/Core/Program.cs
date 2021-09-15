@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Configuration;
-using System.Diagnostics;
-using System.IO;
 using System.Threading;
 
 namespace NFTGenerator
 {
     internal class Program
     {
+        private static Context context;
         private static Generator generator;
         private static Filesystem filesystem;
         private static CommandsDispatcher commandsDispatcher;
@@ -29,103 +27,11 @@ namespace NFTGenerator
 
         private static void RegisterCommands()
         {
-            commandsDispatcher.Register(Command.Literal("open", "opens a path [fs, res, config]", (ctx) =>
-            {
-                Logger.LogWarning("Few arguments, usage: open [fs, res, layers, config]");
-            }).Then("path", (ctx) =>
-            {
-                string path = ctx.GetArg("path");
-                switch (path)
-                {
-                    case "fs":
-                        Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.GetSetting<string>(Configurator.FILESYSTEM_PATH));
-                        break;
-
-                    case "res":
-                        Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.GetSetting<string>(Configurator.RESULTS_PATH));
-                        break;
-
-                    case "layers":
-                        Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.GetSetting<string>(Configurator.FILESYSTEM_PATH) + "\\layers");
-                        break;
-
-                    case "config":
-                        using (Process fileopener = new())
-                        {
-                            fileopener.StartInfo.FileName = "explorer";
-                            fileopener.StartInfo.Arguments = "\"" + ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).FilePath + "\"";
-                            fileopener.Start();
-                        }
-                        break;
-                }
-            }))
-            .Register(Command.Literal("help", "display available commands", (ctx) =>
-            {
-                commandsDispatcher.ForEachCommand(c =>
-                {
-                    Logger.LogInfo(" - ", ConsoleColor.White, false);
-                    Logger.LogInfo(c.Key + ": ", ConsoleColor.Green, false);
-                    Logger.LogInfo(c.Description);
-                });
-            }))
-            .Register(Command.Literal("generate", "start the generation process", (ctx) =>
-            {
-                if (filesystem.Verify(false))
-                {
-                    int amountToMint = Configurator.GetSetting<int>(Configurator.AMOUNT_TO_MINT);
-                    if (amountToMint == 0)
-                    {
-                        Logger.LogWarning("Nothing to generate, amount to mint is set to 0");
-                    }
-                    else if (amountToMint < 0)
-                    {
-                        Logger.LogError("Negative amount to mint (" + amountToMint + ") in config file");
-                    }
-                    else
-                    {
-                        for (int j = 0; j < amountToMint; j++)
-                        {
-                            generator.GenerateSingle(j);
-                        }
-                    }
-                }
-            }))
-            .Register(Command.Literal("verify", "verify the filesystem", (ctx) =>
-            {
-                filesystem.Verify();
-            }))
-            .Register(Command.Literal("purge", "clears all items inside a path [res]", (ctx) =>
-            {
-                Logger.LogWarning("Few arguments, usage: purge [res]");
-            }).Then("path", (ctx) =>
-            {
-                string path = ctx.GetArg("path");
-                switch (path)
-                {
-                    case "res":
-                        Logger.LogInfo("Are you sure you want to purge results folder? (Y/N)", ConsoleColor.DarkGreen);
-                        string answer = Console.ReadLine();
-                        if (answer.ToLower().Equals("y"))
-                        {
-                            int amount = 0;
-                            DirectoryInfo di = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory + Configurator.GetSetting<string>(Configurator.RESULTS_PATH));
-                            foreach (FileInfo file in di.GetFiles())
-                            {
-                                amount++;
-                                file.Delete();
-                            }
-                            Logger.LogInfo("Deleted " + amount + " files");
-                            amount = 0;
-                            foreach (DirectoryInfo dir in di.GetDirectories())
-                            {
-                                amount++;
-                                dir.Delete(true);
-                            }
-                            Logger.LogInfo("Deleted " + amount + " directories");
-                        }
-                        break;
-                }
-            }));
+            commandsDispatcher.Register(Commands.OPEN_PATH);
+            commandsDispatcher.Register(Commands.HELP);
+            commandsDispatcher.Register(Commands.GENERATE);
+            commandsDispatcher.Register(Commands.VERIFY);
+            commandsDispatcher.Register(Commands.PURGE);
         }
 
         private static void Initialize()
@@ -136,6 +42,13 @@ namespace NFTGenerator
             filesystem.Verify();
             generator = new Generator(filesystem);
             commandsDispatcher = new CommandsDispatcher();
+
+            context = new Context()
+            {
+                Filesystem = filesystem,
+                CommandsDispatcher = commandsDispatcher,
+                Generator = generator
+            };
             RegisterCommands();
         }
 
@@ -150,6 +63,105 @@ namespace NFTGenerator
             cliThread.Start();
             cliThread.Join();
             return;
+        }
+
+        internal static class Commands
+        {
+            public static Command OPEN_PATH = Command.Literal(
+                "open",
+                "Opens a path in the explorer",
+                (ctx) => Logger.LogWarning("Few arguments, see usage with -h"),
+                (ctx) =>
+                {
+                    Logger.LogInfo("Parameters:");
+                    Logger.LogInfo("- ", ConsoleColor.White, false);
+                    Logger.LogInfo("fs", ConsoleColor.Green, false);
+                    Logger.LogInfo(": opens the file system folder ");
+                    Logger.LogInfo("- ", ConsoleColor.White, false);
+                    Logger.LogInfo("layers", ConsoleColor.Green, false);
+                    Logger.LogInfo(": opens the layers folder ");
+                    Logger.LogInfo("- ", ConsoleColor.White, false);
+                    Logger.LogInfo("res", ConsoleColor.Green, false);
+                    Logger.LogInfo(": opens the results folder ");
+                    Logger.LogInfo("- ", ConsoleColor.White, false);
+                    Logger.LogInfo("config", ConsoleColor.Green, false);
+                    Logger.LogInfo(": opens the config file");
+                })
+                .Then("path", (ctx) => Delegates.OpenPathCMD(context, ctx));
+
+            public static Command HELP = Command.Literal(
+                "help",
+                "Display available commands",
+                (ctx) =>
+                {
+                    commandsDispatcher.ForEachCommand(c =>
+                    {
+                        Logger.LogInfo(" - ", ConsoleColor.White, false);
+                        Logger.LogInfo(c.Key + ": ", ConsoleColor.Green, false);
+                        Logger.LogInfo(c.Description);
+                    });
+                });
+
+            public static Command GENERATE = Command.Literal(
+                "generate",
+                "Start the generation process",
+                (ctx) =>
+                {
+                    if (filesystem.Verify(false))
+                    {
+                        int amountToMint = Configurator.GetSetting<int>(Configurator.AMOUNT_TO_MINT);
+                        if (amountToMint == 0)
+                        {
+                            Logger.LogWarning("Nothing to generate, amount to mint is set to 0");
+                        }
+                        else if (amountToMint < 0)
+                        {
+                            Logger.LogError("Negative amount to mint (" + amountToMint + ") in config file");
+                        }
+                        else
+                        {
+                            for (int j = 0; j < amountToMint; j++)
+                            {
+                                generator.GenerateSingle(j);
+                            }
+                        }
+                    }
+                });
+
+            public static Command VERIFY = Command.Literal(
+                "verify",
+                "Verify a path",
+                (ctx) => Logger.LogWarning("Few arguments, see usage with -h"),
+                (ctx) =>
+                {
+                    Logger.LogInfo("Parameters:");
+                    Logger.LogInfo("- ", ConsoleColor.White, false);
+                    Logger.LogInfo("fs", ConsoleColor.Green);
+                    Logger.LogInfo("- ", ConsoleColor.White, false);
+                    Logger.LogInfo("res", ConsoleColor.Green);
+                })
+                .Then("path", (ctx) => Delegates.VerifyCMD(context, ctx));
+
+            public static Command PURGE = Command.Literal(
+                "purge",
+                "Clears all items inside a path",
+                (ctx) => Logger.LogWarning("Few arguments, see usage with -h"),
+                (ctx) =>
+                {
+                    Logger.LogInfo("Parameters:");
+                    Logger.LogInfo("- ", ConsoleColor.White, false);
+                    Logger.LogInfo("res", ConsoleColor.Green);
+                })
+                .Then("path", (ctx) => Delegates.PurgePathCMD(context, ctx));
+        }
+
+        internal class Context
+        {
+            public Generator Generator { get; init; }
+
+            public Filesystem Filesystem { get; init; }
+
+            public CommandsDispatcher CommandsDispatcher { get; init; }
         }
     }
 }

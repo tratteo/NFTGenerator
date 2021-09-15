@@ -6,7 +6,7 @@ namespace NFTGenerator
     public class Command : IEquatable<Command>
     {
         public List<Action<Context>> Delegates;
-
+        public List<Action<Context>> Helpers;
         public List<string> argumentsNames;
 
         public string Key { get; private set; }
@@ -15,11 +15,12 @@ namespace NFTGenerator
 
         private Command()
         {
+            Helpers = new List<Action<Context>>();
             Delegates = new List<Action<Context>>();
             argumentsNames = new List<string>();
         }
 
-        public static Builder Literal(string key, string description, Action<Context> Delegate) => new Builder(key, Delegate, description);
+        public static Builder Literal(string key, string description, Action<Context> Delegate, Action<Context> Helper = null) => new Builder(key, Delegate, description, Helper);
 
         public static implicit operator Command(Builder b) => b.Build();
 
@@ -30,19 +31,33 @@ namespace NFTGenerator
 
         public void Execute(string[] arguments)
         {
-            if (arguments.Length > argumentsNames.Count)
+            if (arguments != null && arguments.Length > 0)
             {
-                Logger.LogError("Too many arguments");
-                return;
+                if (arguments.Length > argumentsNames.Count && arguments[^1].Equals("-h"))
+                {
+                    Logger.LogError("Too many arguments");
+                    return;
+                }
             }
-
-            Action<Context> del = Delegates[arguments.Length];
             Dictionary<string, string> args = new Dictionary<string, string>();
             for (int i = 0; i < arguments.Length; i++)
             {
-                args.Add(argumentsNames[i], arguments[i]);
+                if (!arguments[i].Equals("-h"))
+                {
+                    args.Add(argumentsNames[i], arguments[i]);
+                }
             }
-            del?.Invoke(new Context(args));
+
+            if (arguments.Length > 0 && arguments[^1].Equals("-h"))
+            {
+                Logger.LogInfo(Description);
+                Helpers[arguments.Length - 1]?.Invoke(new Context(args));
+            }
+            else
+            {
+                Action<Context> del = Delegates[arguments.Length];
+                del?.Invoke(new Context(args));
+            }
         }
 
         public override string ToString()
@@ -76,9 +91,9 @@ namespace NFTGenerator
 
         public class Builder
         {
-            private Command command;
+            private readonly Command command;
 
-            public Builder(string key, Action<Context> Delegate, string descprition)
+            public Builder(string key, Action<Context> Delegate, string descprition, Action<Context> Helper)
             {
                 command = new Command
                 {
@@ -86,12 +101,14 @@ namespace NFTGenerator
                     Description = descprition,
                 };
                 command.Delegates.Add(Delegate);
+                command.Helpers.Add(Helper);
             }
 
             public Command Build() => command;
 
-            public Builder Then(string argumentName, Action<Context> Delegate)
+            public Builder Then(string argumentName, Action<Context> Delegate, Action<Context> Helper = null)
             {
+                command.Helpers.Add(Helper);
                 command.Delegates.Add(Delegate);
                 command.argumentsNames.Add(argumentName);
                 return this;

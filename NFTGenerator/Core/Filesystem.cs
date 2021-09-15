@@ -30,8 +30,8 @@ namespace NFTGenerator
                 int amount = 0;
                 foreach (Asset a in layer.Assets)
                 {
-                    amount += a.Data.Amount;
-                    FileInfo info = new FileInfo(a.AssetAbsolutePath);
+                    amount += a.Metadata.Amount;
+                    FileInfo info = new(a.AssetAbsolutePath);
 
                     if (info.Extension != fileExtension && fileExtension != string.Empty)
                     {

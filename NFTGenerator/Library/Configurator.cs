@@ -10,6 +10,8 @@ namespace NFTGenerator
         public const string FILESYSTEM_PATH = "fileSystemPath";
         public const string RESULTS_PATH = "resultsPath";
         public const string AMOUNT_TO_MINT = "amountToMint";
+
+
         private static FileSystemWatcher configWatcher;
 
         public static void Load()

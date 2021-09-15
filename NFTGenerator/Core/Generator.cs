@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NFTGenerator.JsonObjects;
+using System;
 using System.Collections.Generic;
 
 namespace NFTGenerator
@@ -17,8 +18,9 @@ namespace NFTGenerator
 
         public void GenerateSingle(int index)
         {
+            NFTMetadata meta = NFTMetadata.Defaulted();
             int[] mintedHash = new int[filesystem.Layers.Count];
-            string resPath = Configurator.GetSetting<string>(Configurator.RESULTS_PATH) + "\\res_" + index + filesystem.MediaExtension;
+            string resPath = Configurator.GetSetting<string>(Configurator.RESULTS_PATH) + "\\" + index + filesystem.MediaExtension;
             List<Asset> toMerge = new List<Asset>();
             for (int i = 0; i < filesystem.Layers.Count; i++)
             {
@@ -40,11 +42,15 @@ namespace NFTGenerator
                 throw new Exception("Unable to merge less than 2 assets!");
             }
             // Create the first gif
+            meta.AddAttributes(toMerge[0].Metadata.Attributes);
+            meta.AddAttributes(toMerge[1].Metadata.Attributes);
             Media.ComposeMedia(toMerge[0].AssetAbsolutePath, toMerge[1].AssetAbsolutePath, resPath);
             for (int i = 2; i < toMerge.Count; i++)
             {
+                meta.AddAttributes(toMerge[i].Metadata.Attributes);
                 Media.ComposeMedia(resPath, toMerge[i].AssetAbsolutePath, resPath);
             }
+            Json.Serialize(meta, Configurator.GetSetting<string>(Configurator.RESULTS_PATH) + "\\" + index + ".json");
             GeneratedHashes.Add(mintedHash);
         }
 
@@ -56,7 +62,7 @@ namespace NFTGenerator
             }
             foreach (Asset asset in filesystem.Layers[^1].Assets)
             {
-                if (asset.MintedAmount < asset.Data.Amount && asset.Id != hash[^1])
+                if (asset.MintedAmount < asset.Metadata.Amount && asset.Id != hash[^1])
                 {
                     //Valid asset
                     return asset;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NFTGenerator.JsonObjects;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,7 +10,7 @@ namespace NFTGenerator
     {
         public int Id { get; init; }
 
-        public Metadata Data { get; init; }
+        public AssetMetadata Metadata { get; init; }
 
         public string AssetAbsolutePath { get; init; }
 
@@ -47,31 +48,13 @@ namespace NFTGenerator
                 throw new Exception("Unable to find the assed inside path: " + resourceAbsolutePath);
             }
 
-            Data = Json.Deserialize<Metadata>(metadataPath);
+            Metadata = Json.Deserialize<AssetMetadata>(metadataPath);
             AssetAbsolutePath = assetPath;
         }
 
         public override string ToString()
         {
-            return "Id: " + Id + ", Asset: " + AssetAbsolutePath + ", Metadata: " + Data.ToString();
-        }
-
-        internal class Metadata
-        {
-            public string Id { get; init; }
-
-            public string Description { get; init; } = string.Empty;
-
-            public int Amount { get; init; } = 0;
-
-            public List<Attribute> Attributes { get; init; } = new List<Attribute>();
-
-            public override string ToString()
-            {
-                string attr = "";
-                Attributes.ForEach(a => attr += a.ToString());
-                return "Id: " + Id + ", Description: " + Description + ", Amount: " + Amount + "\nAttributes\n" + attr;
-            }
+            return "Id: " + Id + ", Asset: " + AssetAbsolutePath + ", Metadata: " + Metadata.ToString();
         }
     }
 }

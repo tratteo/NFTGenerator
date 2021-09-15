@@ -42,7 +42,8 @@ namespace NFTGenerator
                 Command cmd = commands.Find(c => c.Match(splits[0]));
                 if (cmd != null)
                 {
-                    cmd.Execute(splits.Skip(1).ToArray());
+                    string[] args = splits.Skip(1).ToArray();
+                    cmd.Execute(args);
                 }
                 else
                 {
