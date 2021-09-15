@@ -6,9 +6,6 @@ namespace NFTGenerator
     internal class Program
     {
         private static Context context;
-        private static Generator generator;
-        private static Filesystem filesystem;
-        private static CommandsDispatcher commandsDispatcher;
 
         private static void CliRun()
         {
@@ -21,27 +18,27 @@ namespace NFTGenerator
                 Logger.LogInfo();
                 Logger.LogInfo("> ", ConsoleColor.DarkCyan, false);
                 command = Console.ReadLine();
-                commandsDispatcher.Process(command);
+                context.CommandsDispatcher.Process(command);
             }
         }
 
         private static void RegisterCommands()
         {
-            commandsDispatcher.Register(Commands.OPEN_PATH);
-            commandsDispatcher.Register(Commands.HELP);
-            commandsDispatcher.Register(Commands.GENERATE);
-            commandsDispatcher.Register(Commands.VERIFY);
-            commandsDispatcher.Register(Commands.PURGE);
+            context.CommandsDispatcher.Register(Commands.OPEN_PATH);
+            context.CommandsDispatcher.Register(Commands.HELP);
+            context.CommandsDispatcher.Register(Commands.GENERATE);
+            context.CommandsDispatcher.Register(Commands.VERIFY);
+            context.CommandsDispatcher.Register(Commands.PURGE);
         }
 
         private static void Initialize()
         {
             Dependencies.Resolve();
             Configurator.Load();
-            filesystem = new Filesystem();
-            filesystem.Verify();
-            generator = new Generator(filesystem);
-            commandsDispatcher = new CommandsDispatcher();
+
+            Filesystem filesystem = new Filesystem();
+            Generator generator = new Generator(filesystem);
+            CommandsDispatcher commandsDispatcher = new CommandsDispatcher();
 
             context = new Context()
             {
@@ -49,6 +46,7 @@ namespace NFTGenerator
                 CommandsDispatcher = commandsDispatcher,
                 Generator = generator
             };
+            context.Filesystem.Verify();
             RegisterCommands();
         }
 
@@ -87,14 +85,14 @@ namespace NFTGenerator
                     Logger.LogInfo("config", ConsoleColor.Green, false);
                     Logger.LogInfo(": opens the config file");
                 })
-                .Then("path", (ctx) => Delegates.OpenPathCMD(context, ctx));
+                .Then("path", (ctx) => CommandsDelegates.OpenPathCMD(context, ctx));
 
             public static Command HELP = Command.Literal(
                 "help",
                 "Display available commands",
                 (ctx) =>
                 {
-                    commandsDispatcher.ForEachCommand(c =>
+                    context.CommandsDispatcher.ForEachCommand(c =>
                     {
                         Logger.LogInfo(" - ", ConsoleColor.White, false);
                         Logger.LogInfo(c.Key + ": ", ConsoleColor.Green, false);
@@ -107,7 +105,7 @@ namespace NFTGenerator
                 "Start the generation process",
                 (ctx) =>
                 {
-                    if (filesystem.Verify(false))
+                    if (context.Filesystem.Verify(false))
                     {
                         int amountToMint = Configurator.GetSetting<int>(Configurator.AMOUNT_TO_MINT);
                         if (amountToMint == 0)
@@ -122,7 +120,7 @@ namespace NFTGenerator
                         {
                             for (int j = 0; j < amountToMint; j++)
                             {
-                                generator.GenerateSingle(j);
+                                context.Generator.GenerateSingle(j);
                             }
                         }
                     }
@@ -140,7 +138,7 @@ namespace NFTGenerator
                     Logger.LogInfo("- ", ConsoleColor.White, false);
                     Logger.LogInfo("res", ConsoleColor.Green);
                 })
-                .Then("path", (ctx) => Delegates.VerifyCMD(context, ctx));
+                .Then("path", (ctx) => CommandsDelegates.VerifyCMD(context, ctx));
 
             public static Command PURGE = Command.Literal(
                 "purge",
@@ -152,7 +150,7 @@ namespace NFTGenerator
                     Logger.LogInfo("- ", ConsoleColor.White, false);
                     Logger.LogInfo("res", ConsoleColor.Green);
                 })
-                .Then("path", (ctx) => Delegates.PurgePathCMD(context, ctx));
+                .Then("path", (ctx) => CommandsDelegates.PurgePathCMD(context, ctx));
         }
 
         internal class Context

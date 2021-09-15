@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace NFTGenerator
 {
-    internal static class Delegates
+    internal static class CommandsDelegates
     {
         public static void VerifyCMD(Program.Context pctx, Command.Context ctx)
         {
