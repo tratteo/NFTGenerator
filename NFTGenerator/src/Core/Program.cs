@@ -18,7 +18,10 @@ namespace NFTGenerator
                 Logger.LogInfo();
                 Logger.LogInfo("> ", ConsoleColor.DarkCyan, false);
                 command = Console.ReadLine();
-                context.CommandsDispatcher.Process(command);
+                if (!command.Equals("exit"))
+                {
+                    context.CommandsDispatcher.Process(command);
+                }
             }
         }
 
