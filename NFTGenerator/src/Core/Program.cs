@@ -110,6 +110,8 @@ namespace NFTGenerator
                 {
                     if (context.Filesystem.Verify(false))
                     {
+                        PURGE.Execute(new string[] { "res", "-f" });
+                        context.Generator.ResetGenerationParameters();
                         int amountToMint = Configurator.GetSetting<int>(Configurator.AMOUNT_TO_MINT);
                         if (amountToMint == 0)
                         {
@@ -153,7 +155,8 @@ namespace NFTGenerator
                     Logger.LogInfo("- ", ConsoleColor.White, false);
                     Logger.LogInfo("res", ConsoleColor.Green);
                 })
-                .Then("path", (ctx) => CommandsDelegates.PurgePathCMD(context, ctx));
+                .Then("path", (ctx) => CommandsDelegates.PurgePathCMD(context, ctx))
+                .Then("force", (ctx) => CommandsDelegates.PurgePathCMD(context, ctx));
         }
 
         internal class Context

@@ -11,8 +11,10 @@ namespace NFTGenerator
             startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
             startInfo.FileName = "cmd.exe";
             startInfo.Arguments = GetMergeCommnd(first, second, res);
+            //Logger.LogInfo(startInfo.Arguments);
             process.StartInfo = startInfo;
             process.Start();
+            process.WaitForExit();
         }
 
         private static string GetMergeCommnd(string first, string second, string res)
@@ -26,6 +28,7 @@ namespace NFTGenerator
             }
             else
             {
+                //Logger.LogInfo(firstExtension);
                 return firstExtension switch
                 {
                     ".gif" => "/C magick convert " + first + " -coalesce null: " + second + " -gravity center -layers composite " + res,

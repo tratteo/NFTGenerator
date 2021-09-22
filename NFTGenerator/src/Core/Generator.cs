@@ -16,8 +16,21 @@ namespace NFTGenerator
             this.filesystem = filesystem;
         }
 
+        public void ResetGenerationParameters()
+        {
+            foreach (Layer layer in filesystem.Layers)
+            {
+                foreach (Asset asset in layer.Assets)
+                {
+                    asset.MintedAmount = 0;
+                }
+            }
+            GeneratedHashes.Clear();
+        }
+
         public void GenerateSingle(int index)
         {
+            Logger.LogInfo("Generating NFT #" + index);
             NFTMetadata meta = NFTMetadata.Defaulted();
             int[] mintedHash = new int[filesystem.Layers.Count];
             string resPath = Configurator.GetSetting<string>(Configurator.RESULTS_PATH) + "\\" + index + filesystem.MediaExtension;
@@ -45,6 +58,7 @@ namespace NFTGenerator
             meta.AddAttributes(toMerge[0].Metadata.Attributes);
             meta.AddAttributes(toMerge[1].Metadata.Attributes);
             Media.ComposeMedia(toMerge[0].AssetAbsolutePath, toMerge[1].AssetAbsolutePath, resPath);
+            //Logger.LogInfo(toMerge.Count.ToString());
             for (int i = 2; i < toMerge.Count; i++)
             {
                 meta.AddAttributes(toMerge[i].Metadata.Attributes);

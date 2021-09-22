@@ -88,12 +88,11 @@ namespace NFTGenerator
         public static void PurgePathCMD(Program.Context pctx, Command.Context ctx)
         {
             string path = ctx.GetArg("path");
+            string force = ctx.GetArg("force");
             switch (path)
             {
                 case "res":
-                    Logger.LogInfo("Are you sure you want to purge results folder? (Y/N)", ConsoleColor.DarkGreen);
-                    string answer = Console.ReadLine();
-                    if (answer.ToLower().Equals("y"))
+                    if (force == string.Empty || force == "-f")
                     {
                         int amount = 0;
                         DirectoryInfo di = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory + Configurator.GetSetting<string>(Configurator.RESULTS_PATH));
@@ -110,6 +109,29 @@ namespace NFTGenerator
                             dir.Delete(true);
                         }
                         Logger.LogInfo("Deleted " + amount + " directories");
+                    }
+                    else
+                    {
+                        Logger.LogInfo("Are you sure you want to purge results folder? (Y/N)", ConsoleColor.DarkGreen);
+                        string answer = Console.ReadLine();
+                        if (answer.ToLower().Equals("y"))
+                        {
+                            int amount = 0;
+                            DirectoryInfo di = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory + Configurator.GetSetting<string>(Configurator.RESULTS_PATH));
+                            foreach (FileInfo file in di.GetFiles())
+                            {
+                                amount++;
+                                file.Delete();
+                            }
+                            Logger.LogInfo("Deleted " + amount + " files");
+                            amount = 0;
+                            foreach (DirectoryInfo dir in di.GetDirectories())
+                            {
+                                amount++;
+                                dir.Delete(true);
+                            }
+                            Logger.LogInfo("Deleted " + amount + " directories");
+                        }
                     }
                     break;
             }
