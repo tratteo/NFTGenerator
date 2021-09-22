@@ -10,6 +10,7 @@ namespace NFTGenerator
         private static void CliRun()
         {
             string command = string.Empty;
+            Logger.LogInfo();
             Logger.LogInfo("CLI (Command line interface) - ", ConsoleColor.DarkCyan, false);
             Logger.LogInfo("help", ConsoleColor.Green, false);
             Logger.LogInfo(" for the available commands", ConsoleColor.DarkCyan);
@@ -38,7 +39,6 @@ namespace NFTGenerator
         {
             Dependencies.Resolve();
             Configurator.Load();
-
             Filesystem filesystem = new Filesystem();
             Generator generator = new Generator(filesystem);
             CommandsDispatcher commandsDispatcher = new CommandsDispatcher();
@@ -49,7 +49,7 @@ namespace NFTGenerator
                 CommandsDispatcher = commandsDispatcher,
                 Generator = generator
             };
-            context.Filesystem.Verify();
+            context.Filesystem.Verify(false);
             RegisterCommands();
         }
 
@@ -112,7 +112,7 @@ namespace NFTGenerator
                     {
                         PURGE.Execute(new string[] { "res", "-f" });
                         context.Generator.ResetGenerationParameters();
-                        int amountToMint = Configurator.GetSetting<int>(Configurator.AMOUNT_TO_MINT);
+                        int amountToMint = Configurator.GetSetting<int>(Configurator.SERIE_AMOUNT);
                         if (amountToMint == 0)
                         {
                             Logger.LogWarning("Nothing to generate, amount to mint is set to 0");
@@ -154,6 +154,9 @@ namespace NFTGenerator
                     Logger.LogInfo("Parameters:");
                     Logger.LogInfo("- ", ConsoleColor.White, false);
                     Logger.LogInfo("res", ConsoleColor.Green);
+                    Logger.LogInfo("Use ", ConsoleColor.White, false);
+                    Logger.LogInfo("-f", ConsoleColor.Blue, false);
+                    Logger.LogInfo(" to skip the confirmation");
                 })
                 .Then("path", (ctx) => CommandsDelegates.PurgePathCMD(context, ctx))
                 .Then("force", (ctx) => CommandsDelegates.PurgePathCMD(context, ctx));

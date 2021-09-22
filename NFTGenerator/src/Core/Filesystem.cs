@@ -18,7 +18,7 @@ namespace NFTGenerator
         public bool Verify(bool verbose = true)
         {
             List<Action> warnings = new List<Action>();
-            int amountToMint = Configurator.GetSetting<int>(Configurator.AMOUNT_TO_MINT);
+            int amountToMint = Configurator.GetSetting<int>(Configurator.SERIE_AMOUNT);
             Load(verbose);
             if (verbose)
             {
@@ -71,12 +71,11 @@ namespace NFTGenerator
             }
             if (verbose)
             {
-                Logger.LogInfo("Verification process passed with " + warnings.Count + " warnings");
+                Logger.LogInfo("Verification process passed with " + warnings.Count + " warnings", ConsoleColor.Green);
                 foreach (Action w in warnings)
                 {
                     w?.Invoke();
                 }
-                Logger.LogInfo();
             }
             return true;
         }

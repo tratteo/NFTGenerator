@@ -10,14 +10,14 @@ namespace NFTGenerator
             System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
             startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
             startInfo.FileName = "cmd.exe";
-            startInfo.Arguments = GetMergeCommnd(first, second, res);
+            startInfo.Arguments = GetMergeCommand(first, second, res);
             //Logger.LogInfo(startInfo.Arguments);
             process.StartInfo = startInfo;
             process.Start();
             process.WaitForExit();
         }
 
-        private static string GetMergeCommnd(string first, string second, string res)
+        private static string GetMergeCommand(string first, string second, string res)
         {
             string firstExtension = new FileInfo(first).Extension;
             string secondExtension = new FileInfo(second).Extension;

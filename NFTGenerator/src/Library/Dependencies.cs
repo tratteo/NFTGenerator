@@ -12,17 +12,12 @@ namespace NFTGenerator
     {
         public enum ProgramVersion { x86, x64 }
 
+        private const string IMAGEMAGICK_URL = "https://download.imagemagick.org/ImageMagick/download/binaries/ImageMagick-7.1.0-8-Q16-HDRI-x64-dll.exe";
+
         public static void Resolve()
         {
             Logger.LogInfo("Checking for dependencies...");
-            if (!Directory.Exists("dependencies"))
-            {
-                Logger.LogError("Something is really wrong, dependencies folder not found");
-                Console.ReadKey();
-                Environment.Exit(1);
-            }
-            string[] deps = Directory.GetFiles("dependencies/", "*.*");
-            HandleDependency(deps, "ImageMagick");
+            ResolveDependency("ImageMagick", IMAGEMAGICK_URL);
             Logger.LogInfo();
         }
 
@@ -37,35 +32,47 @@ namespace NFTGenerator
             return registryKey.Any(key => CheckApplication(key, applicationName, programVersion));
         }
 
-        private static void HandleDependency(string[] deps, string name)
+        private static void ResolveDependency(string name, string url)
         {
             if (!IsSoftwareInstalled(name, null))
             {
-                Logger.LogInfo("Missing dependency found: " + name + " not installed");
-                Regex reg = new Regex("ImageMagick");
-                foreach (string dep in deps)
+                Logger.LogInfo("Missing dependency: " + name + " not installed", ConsoleColor.Red);
+                Logger.LogInfo("Downloading\n");
+                string installerName = name + "_dep.exe";
+                using Process downloadProcess = new();
+                ProcessStartInfo startInfo = new()
                 {
-                    if (reg.IsMatch(dep))
+                    FileName = "cmd.exe",
+                    Arguments = "/C curl " + url + " --output " + installerName
+                };
+                downloadProcess.StartInfo = startInfo;
+                downloadProcess.EnableRaisingEvents = true;
+                downloadProcess.Start();
+                downloadProcess.WaitForExit();
+                Logger.LogInfo("\n" + name + " successfully downloaded, starting the installation process");
+                using Process proc = Process.Start(installerName);
+                proc.EnableRaisingEvents = true;
+                proc.Exited += (object sender, EventArgs e) =>
+                {
+                    if (proc.ExitCode != 0)
                     {
-                        Logger.LogInfo("Installing " + name);
-                        using Process proc = Process.Start(dep);
-                        proc.EnableRaisingEvents = true;
-                        proc.Exited += (object sender, EventArgs e) =>
-                        {
-                            if (proc.ExitCode != 0)
-                            {
-                                Logger.LogError("Restart the application and install all the dependencies");
-                                Console.ReadKey();
-                                Environment.Exit(1);
-                            }
-                            else
-                            {
-                                Logger.LogInfo(dep + " successfully installed", ConsoleColor.Green);
-                            }
-                        };
-                        proc.WaitForExit();
+                        Logger.LogError("Installation process failed, restart the application\nPress a key to exit");
+                        File.Delete(installerName);
+
+                        Console.ReadKey();
+                        Environment.Exit(1);
                     }
-                }
+                    else
+                    {
+                        Logger.LogInfo(name + " successfully installed", ConsoleColor.Green);
+                        File.Delete(installerName);
+                    }
+                };
+                proc.WaitForExit();
+            }
+            else
+            {
+                Logger.LogInfo(name + " dependency resolved", ConsoleColor.Green);
             }
         }
 

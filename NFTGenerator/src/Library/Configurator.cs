@@ -9,7 +9,7 @@ namespace NFTGenerator
         public const string ALLOW_DUPLICATES = "allowDuplicates";
         public const string FILESYSTEM_PATH = "fileSystemPath";
         public const string RESULTS_PATH = "resultsPath";
-        public const string AMOUNT_TO_MINT = "amountToMint";
+        public const string SERIE_AMOUNT = "serieAmount";
 
         private static FileSystemWatcher configWatcher;
 
@@ -36,7 +36,7 @@ namespace NFTGenerator
             T result = defaultValue;
             if (!string.IsNullOrEmpty(val))
             {
-                T typeDefault = default(T);
+                T typeDefault = default;
                 if (typeof(T) == typeof(string))
                 {
                     typeDefault = (T)(object)string.Empty;

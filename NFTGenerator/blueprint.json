@@ -1,0 +1,26 @@
+{
+  "name": "NameDefault",
+  "symbol": "DS",
+  "description": "",
+  "seller_fee_basis_points": 5,
+  "image": "image.png",
+  "animation_url": "",
+  "external_url": "",
+  "attributes": [
+  ],
+  "collection": {
+    "name": "Default",
+    "family": "Default family"
+  },
+  "properties": {
+    "files": [
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "",
+        "share": 100
+      }
+    ]
+  }
+}

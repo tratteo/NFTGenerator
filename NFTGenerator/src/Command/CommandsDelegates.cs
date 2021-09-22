@@ -92,7 +92,7 @@ namespace NFTGenerator
             switch (path)
             {
                 case "res":
-                    if (force == string.Empty || force == "-f")
+                    if (force != string.Empty || force == "-f")
                     {
                         int amount = 0;
                         DirectoryInfo di = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory + Configurator.GetSetting<string>(Configurator.RESULTS_PATH));
