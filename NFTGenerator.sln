@@ -3,18 +3,31 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31624.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFTGenerator", "NFTGenerator\NFTGenerator.csproj", "{A52072CD-E47B-47CC-B534-F4C333EE6051}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NFTGenerator", "NFTGenerator\NFTGenerator.csproj", "{A52072CD-E47B-47CC-B534-F4C333EE6051}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "NFTGenerator_Setup", "NFTGenerator_Setup\NFTGenerator_Setup.vdproj", "{67309C51-C1BD-4DF0-BCB3-7F038B898826}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A52072CD-E47B-47CC-B534-F4C333EE6051}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A52072CD-E47B-47CC-B534-F4C333EE6051}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A52072CD-E47B-47CC-B534-F4C333EE6051}.Debug|x64.ActiveCfg = Debug|x64
+		{A52072CD-E47B-47CC-B534-F4C333EE6051}.Debug|x64.Build.0 = Debug|x64
 		{A52072CD-E47B-47CC-B534-F4C333EE6051}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A52072CD-E47B-47CC-B534-F4C333EE6051}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A52072CD-E47B-47CC-B534-F4C333EE6051}.Release|x64.ActiveCfg = Release|x64
+		{A52072CD-E47B-47CC-B534-F4C333EE6051}.Release|x64.Build.0 = Release|x64
+		{67309C51-C1BD-4DF0-BCB3-7F038B898826}.Debug|Any CPU.ActiveCfg = Debug
+		{67309C51-C1BD-4DF0-BCB3-7F038B898826}.Debug|x64.ActiveCfg = Debug
+		{67309C51-C1BD-4DF0-BCB3-7F038B898826}.Release|Any CPU.ActiveCfg = Release
+		{67309C51-C1BD-4DF0-BCB3-7F038B898826}.Release|x64.ActiveCfg = Release
+		{67309C51-C1BD-4DF0-BCB3-7F038B898826}.Release|x64.Build.0 = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

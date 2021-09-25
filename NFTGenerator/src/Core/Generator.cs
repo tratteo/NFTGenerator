@@ -37,7 +37,6 @@ namespace NFTGenerator
             List<Asset> toMerge = new List<Asset>();
             for (int i = 0; i < filesystem.Layers.Count; i++)
             {
-                //TODO get random asset inside each layer
                 Asset pick = filesystem.Layers[i].GetRandom();
                 mintedHash[i] = pick.Id;
                 //We are in last layer and there is a duplicate
