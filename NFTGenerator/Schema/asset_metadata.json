@@ -1,15 +1,15 @@
 {
-  "Id": "Lorem",
-  "Description": "Lorem ipsum",
-  "Amount": 1,
-  "Attributes": [
+  "id": "Lorem",
+  "description": "Lorem ipsum",
+  "amount": 1,
+  "attributes": [
     {
-      "Name": "name1",
-      "Value": "value1"
+      "trait": "name1",
+      "value": "value1"
     },
     {
-      "Name": "name2",
-      "Value": "value2"
+      "trait": "name2",
+      "value": "value2"
     }
   ]
 }
