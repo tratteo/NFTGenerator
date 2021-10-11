@@ -1,6 +1,12 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) Matteo Beltrame
+//
+// NFTGenerator -> CreatorMetadata.cs
+//
+// All Rights Reserved
 
-namespace NFTGenerator.JsonObjects
+using Newtonsoft.Json;
+
+namespace NFTGenerator
 {
     [System.Serializable]
     internal class CreatorMetadata
@@ -11,16 +17,16 @@ namespace NFTGenerator.JsonObjects
         [JsonProperty("share")]
         public int Share { get; set; }
 
-        public bool Valid()
+        public bool Valid(Logger logger)
         {
             if (Address.Equals(string.Empty))
             {
-                Logger.LogError("Creator Address is empty");
+                logger.LogError("Creator Address is empty");
                 return false;
             }
             if (Share <= 0)
             {
-                Logger.LogError("Creator Share is set to " + Share);
+                logger.LogError("Creator Share is set to " + Share);
                 return false;
             }
             return true;

@@ -1,29 +1,35 @@
-﻿using System.IO;
+﻿// Copyright (c) Matteo Beltrame
+//
+// NFTGenerator -> Media.cs
+//
+// All Rights Reserved
+
+using System.IO;
 
 namespace NFTGenerator
 {
     internal static class Media
     {
-        public static void ComposeMedia(string first, string second, string res)
+        public static void ComposeMedia(string first, string second, string res, Logger logger)
         {
             System.Diagnostics.Process process = new System.Diagnostics.Process();
             System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
             startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
             startInfo.FileName = "cmd.exe";
-            startInfo.Arguments = GetMergeCommand(first, second, res);
+            startInfo.Arguments = GetMergeCommand(first, second, res, logger);
             //Logger.LogInfo(startInfo.Arguments);
             process.StartInfo = startInfo;
             process.Start();
             process.WaitForExit();
         }
 
-        private static string GetMergeCommand(string first, string second, string res)
+        private static string GetMergeCommand(string first, string second, string res, Logger logger)
         {
             string firstExtension = new FileInfo(first).Extension;
             string secondExtension = new FileInfo(second).Extension;
             if (firstExtension != secondExtension)
             {
-                Logger.LogError("Unable to combine two different file types: " + firstExtension + " - " + secondExtension);
+                logger.LogError("Unable to combine two different file types: " + firstExtension + " - " + secondExtension);
                 return string.Empty;
             }
             else

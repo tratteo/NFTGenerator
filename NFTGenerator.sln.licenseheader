@@ -1,0 +1,33 @@
+﻿extensions: designer.cs generated.cs
+extensions: .cs .cpp .h
+// Copyright (c) %UserDisplayName%
+//
+// %Project% -> %FileName%
+//
+// All Rights Reserved
+
+extensions: .aspx .ascx
+<%--
+Copyright (c) %UserDisplayName%
+
+%Project% -> %FileName%
+
+All Rights Reserved
+
+--%>
+extensions: .vb
+Copyright (c) %UserDisplayName%
+
+%Project% -> %FileName%
+
+All Rights Reserved
+
+extensions:  .xml .config .xsd
+<!--
+Copyright (c) %UserDisplayName%
+
+%Project% -> %FileName%
+
+All Rights Reserved
+
+-->

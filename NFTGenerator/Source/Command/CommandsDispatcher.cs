@@ -1,4 +1,10 @@
-﻿using System;
+﻿// Copyright (c) Matteo Beltrame
+//
+// NFTGenerator -> CommandsDispatcher.cs
+//
+// All Rights Reserved
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -7,10 +13,12 @@ namespace NFTGenerator
     internal class CommandsDispatcher
     {
         private readonly List<Command> commands;
+        private readonly Logger logger;
 
-        public CommandsDispatcher()
+        public CommandsDispatcher(Logger logger)
         {
             commands = new List<Command>();
+            this.logger = logger;
         }
 
         public CommandsDispatcher Register(Command command)
@@ -21,7 +29,7 @@ namespace NFTGenerator
             }
             else
             {
-                Logger.LogWarning("Command: [" + command.Key + "] tried to register twice\n");
+                logger.LogWarning("Command: [" + command.Key + "] tried to register twice\n");
             }
             return this;
         }
@@ -43,16 +51,16 @@ namespace NFTGenerator
                 if (cmd != null)
                 {
                     string[] args = splits.Skip(1).ToArray();
-                    cmd.Execute(args);
+                    cmd.Execute(args, logger);
                 }
                 else
                 {
-                    Logger.LogWarning("Command not found");
+                    logger.LogWarning("Command not found");
                 }
             }
             else
             {
-                Logger.LogWarning("Command not found, weird command");
+                logger.LogWarning("Command not found, weird command");
             }
         }
     }

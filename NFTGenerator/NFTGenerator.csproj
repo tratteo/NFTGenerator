@@ -5,6 +5,10 @@
     <TargetFramework>net5.0</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
     <NoWin32Manifest>true</NoWin32Manifest>
+    <Version>1.0.1</Version>
+    <Authors>Siamango</Authors>
+    <Company>Siamango</Company>
+    <Description>A simple CLI for generating NFT-like gifs</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -12,6 +16,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Schema\asset_metadata.json" />
+    <None Remove="Schema\nft_metadata.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Schema\asset_metadata.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Schema\nft_metadata.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="5.0.0" />

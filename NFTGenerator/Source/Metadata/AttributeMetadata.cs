@@ -1,9 +1,15 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) Matteo Beltrame
+//
+// NFTGenerator -> AttributeMetadata.cs
+//
+// All Rights Reserved
+
+using Newtonsoft.Json;
 using System;
 
-namespace NFTGenerator.JsonObjects
+namespace NFTGenerator
 {
-    [System.Serializable]
+    [Serializable]
     internal class AttributeMetadata : IEquatable<AttributeMetadata>
     {
         [JsonProperty("trait")]
@@ -11,15 +17,6 @@ namespace NFTGenerator.JsonObjects
 
         [JsonProperty("value")]
         public string Value { get; init; }
-
-        public static AttributeMetadata Define(string name, string value)
-        {
-            return new AttributeMetadata()
-            {
-                Trait = name,
-                Value = value
-            };
-        }
 
         public bool Equals(AttributeMetadata other)
         {

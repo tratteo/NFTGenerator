@@ -43,6 +43,14 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+            }
         }
         "Release"
         {
@@ -193,15 +201,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:NFTGenerator"
-        "ProductCode" = "8:{9919BDBC-B6BA-4F29-A3E0-BC829F1DC8C9}"
-        "PackageCode" = "8:{E504C375-0656-4454-B4F1-B4550A66A262}"
+        "ProductCode" = "8:{64B7D3C1-7807-480A-B3A7-47A648F64725}"
+        "PackageCode" = "8:{E7F9711A-4E4F-4A94-AB92-82EFDCD1345F}"
         "UpgradeCode" = "8:{5A543C38-448D-41A7-8859-C3E782869935}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.0.0"
+        "ProductVersion" = "8:1.0.1"
         "Manufacturer" = "8:Siamango"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
@@ -341,7 +349,7 @@
                     "{688940B3-5CA9-4162-8DEE-2993FA9D8CBC}:_B438F069719E4F8C83DDCAD199457314"
                     {
                     "Sequence" = "3:100"
-                    "DisplayName" = "8:Stato"
+                    "DisplayName" = "8:Progress"
                     "UseDynamicProperties" = "11:TRUE"
                     "IsDependency" = "11:FALSE"
                     "SourcePath" = "8:<VsdDialogDir>\\VsdAdminProgressDlg.wid"
@@ -385,7 +393,7 @@
                     "{688940B3-5CA9-4162-8DEE-2993FA9D8CBC}:_270786CCAE0342CABFA311080780C024"
                     {
                     "Sequence" = "3:100"
-                    "DisplayName" = "8:Installazione completata"
+                    "DisplayName" = "8:Finished"
                     "UseDynamicProperties" = "11:TRUE"
                     "IsDependency" = "11:FALSE"
                     "SourcePath" = "8:<VsdDialogDir>\\VsdFinishedDlg.wid"
@@ -429,7 +437,7 @@
                     "{688940B3-5CA9-4162-8DEE-2993FA9D8CBC}:_CCC50CE1D07A447FB118217A7F7B52F2"
                     {
                     "Sequence" = "3:300"
-                    "DisplayName" = "8:Conferma installazione"
+                    "DisplayName" = "8:Confirm Installation"
                     "UseDynamicProperties" = "11:TRUE"
                     "IsDependency" = "11:FALSE"
                     "SourcePath" = "8:<VsdDialogDir>\\VsdConfirmDlg.wid"
@@ -451,7 +459,7 @@
                     "{688940B3-5CA9-4162-8DEE-2993FA9D8CBC}:_CF23A2CAF72D43259E8A40D76FA9F30D"
                     {
                     "Sequence" = "3:100"
-                    "DisplayName" = "8:Introduzione"
+                    "DisplayName" = "8:Welcome"
                     "UseDynamicProperties" = "11:TRUE"
                     "IsDependency" = "11:FALSE"
                     "SourcePath" = "8:<VsdDialogDir>\\VsdWelcomeDlg.wid"
@@ -499,7 +507,7 @@
                     "{688940B3-5CA9-4162-8DEE-2993FA9D8CBC}:_EB7F992EC83547FFADAD43FB09FFA302"
                     {
                     "Sequence" = "3:200"
-                    "DisplayName" = "8:Cartella di installazione"
+                    "DisplayName" = "8:Installation Folder"
                     "UseDynamicProperties" = "11:TRUE"
                     "IsDependency" = "11:FALSE"
                     "SourcePath" = "8:<VsdDialogDir>\\VsdFolderDlg.wid"
@@ -555,7 +563,7 @@
                     "{688940B3-5CA9-4162-8DEE-2993FA9D8CBC}:_83ED6F95533744D99ECB0BC27102579A"
                     {
                     "Sequence" = "3:100"
-                    "DisplayName" = "8:Installazione completata"
+                    "DisplayName" = "8:Finished"
                     "UseDynamicProperties" = "11:TRUE"
                     "IsDependency" = "11:FALSE"
                     "SourcePath" = "8:<VsdDialogDir>\\VsdAdminFinishedDlg.wid"
@@ -586,7 +594,7 @@
                     "{688940B3-5CA9-4162-8DEE-2993FA9D8CBC}:_273E640DB3834B81868098D867E1CE6E"
                     {
                     "Sequence" = "3:200"
-                    "DisplayName" = "8:Cartella di installazione"
+                    "DisplayName" = "8:Installation Folder"
                     "UseDynamicProperties" = "11:TRUE"
                     "IsDependency" = "11:FALSE"
                     "SourcePath" = "8:<VsdDialogDir>\\VsdAdminFolderDlg.wid"
@@ -608,7 +616,7 @@
                     "{688940B3-5CA9-4162-8DEE-2993FA9D8CBC}:_82560731F1FC4C8681CD5E04A826F6B1"
                     {
                     "Sequence" = "3:100"
-                    "DisplayName" = "8:Introduzione"
+                    "DisplayName" = "8:Welcome"
                     "UseDynamicProperties" = "11:TRUE"
                     "IsDependency" = "11:FALSE"
                     "SourcePath" = "8:<VsdDialogDir>\\VsdAdminWelcomeDlg.wid"
@@ -656,7 +664,7 @@
                     "{688940B3-5CA9-4162-8DEE-2993FA9D8CBC}:_B77E2E65EB574A28A939EE7170B03729"
                     {
                     "Sequence" = "3:300"
-                    "DisplayName" = "8:Conferma installazione"
+                    "DisplayName" = "8:Confirm Installation"
                     "UseDynamicProperties" = "11:TRUE"
                     "IsDependency" = "11:FALSE"
                     "SourcePath" = "8:<VsdDialogDir>\\VsdAdminConfirmDlg.wid"
@@ -687,7 +695,7 @@
                     "{688940B3-5CA9-4162-8DEE-2993FA9D8CBC}:_0417B75D4A5840FA9EC2D8A31A61A2DF"
                     {
                     "Sequence" = "3:100"
-                    "DisplayName" = "8:Stato"
+                    "DisplayName" = "8:Progress"
                     "UseDynamicProperties" = "11:TRUE"
                     "IsDependency" = "11:FALSE"
                     "SourcePath" = "8:<VsdDialogDir>\\VsdProgressDlg.wid"
@@ -729,7 +737,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_243F63AB400844E59D3DAB45F14FE514"
             {
-            "SourcePath" = "8:..\\NFTGenerator\\obj\\x64\\Release\\net5.0\\apphost.exe"
+            "SourcePath" = "8:..\\NFTGenerator\\obj\\Debug\\net5.0\\apphost.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_813DD80876BF424CB2CC0844FC2757A3"

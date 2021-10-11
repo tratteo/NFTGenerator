@@ -1,11 +1,19 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) Matteo Beltrame
+//
+// NFTGenerator -> NFTMetadata.cs
+//
+// All Rights Reserved
+
+using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace NFTGenerator.JsonObjects
+namespace NFTGenerator
 {
     [System.Serializable]
     internal class NFTMetadata
     {
+        public const string SCHEMA = "Schema/nft_metadata.json";
+
         [JsonProperty("name")]
         public string Name { get; set; }
 
@@ -36,43 +44,43 @@ namespace NFTGenerator.JsonObjects
         [JsonProperty("properties")]
         public PropertiesMetadata Properties { get; set; }
 
-        public static NFTMetadata Defaulted() => Json.Deserialize<NFTMetadata>("blueprint.json");
+        public static NFTMetadata Schema() => Json.Deserialize<NFTMetadata>(SCHEMA);
 
-        public bool Valid()
+        public bool Valid(Logger logger)
         {
             bool valid = true;
             if (Name.Equals(string.Empty))
             {
-                Logger.LogError("Field Name is empty");
+                logger.LogError("Field Name is empty");
                 valid = false;
             }
             if (Description.Equals(string.Empty))
             {
-                Logger.LogWarning("Field Description is empty");
+                logger.LogWarning("Field Description is empty");
             }
             if (Symbol.Equals(string.Empty))
             {
-                Logger.LogError("Field Symbol is empty");
+                logger.LogError("Field Symbol is empty");
                 valid = false;
             }
             if (SellerFeeBasisPoints.Equals(0))
             {
-                Logger.LogWarning("SellerFeeBasisPoints is set to 0, you don't want to earn anything from sales?");
+                logger.LogWarning("SellerFeeBasisPoints is set to 0, you don't want to earn anything from sales?");
             }
             if (!Image.Equals("image.png"))
             {
-                Logger.LogError("Since Metaplex developers are weirdos, image field MUST be populated with <image.png>");
+                logger.LogError("Since Metaplex developers are weirdos, image field MUST be populated with <image.png>");
                 valid = false;
             }
             if (ExternalUrl.Equals(string.Empty))
             {
-                Logger.LogWarning("Field ExternalUrl is empty");
+                logger.LogWarning("Field ExternalUrl is empty");
             }
-            if (!Collection.Valid())
+            if (!Collection.Valid(logger))
             {
                 valid = false;
             }
-            if (!Properties.Valid())
+            if (!Properties.Valid(logger))
             {
                 valid = false;
             }

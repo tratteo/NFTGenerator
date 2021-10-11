@@ -1,6 +1,12 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) Matteo Beltrame
+//
+// NFTGenerator -> CollectionMetadata.cs
+//
+// All Rights Reserved
 
-namespace NFTGenerator.JsonObjects
+using Newtonsoft.Json;
+
+namespace NFTGenerator
 {
     [System.Serializable]
     internal class CollectionMetadata
@@ -11,17 +17,17 @@ namespace NFTGenerator.JsonObjects
         [JsonProperty("family")]
         public string Family { get; set; }
 
-        public bool Valid()
+        public bool Valid(Logger logger)
         {
             bool valid = true;
             if (Name.Equals(string.Empty))
             {
-                Logger.LogError("[Collection] Name is empty");
+                logger.LogError("[Collection] Name is empty");
                 valid = false;
             }
             if (Family.Equals(string.Empty))
             {
-                Logger.LogError("[Colleciton] Family is empty");
+                logger.LogError("[Colleciton] Family is empty");
                 valid = false;
             }
             return valid;

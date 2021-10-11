@@ -1,11 +1,15 @@
-﻿using Microsoft.Win32;
+﻿// Copyright (c) Matteo Beltrame
+//
+// NFTGenerator -> Dependencies.cs
+//
+// All Rights Reserved
+
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Threading;
 
 namespace NFTGenerator
 {
@@ -16,19 +20,14 @@ namespace NFTGenerator
         private const string IMAGEMAGICK_URL = "https://download.imagemagick.org/ImageMagick/download/binaries/ImageMagick-7.1.0-8-Q16-HDRI-x64-dll.exe";
         private static readonly string DEPENDENCIES_TEMP_LOCATION = "C:/Users/" + Environment.GetEnvironmentVariable("USERNAME") + "/";
 
-        public static void Clean()
+        public static void Resolve(Logger logger)
         {
-            File.Delete(DEPENDENCIES_TEMP_LOCATION + "ImageMagick_dep.exe");
+            logger.LogInfo("Checking for dependencies...");
+            ResolveDependency("ImageMagick", IMAGEMAGICK_URL, logger);
+            logger.LogInfo("\n");
         }
 
-        public static void Resolve()
-        {
-            Logger.LogInfo("Checking for dependencies...");
-            ResolveDependency("ImageMagick", IMAGEMAGICK_URL);
-            Logger.LogInfo();
-        }
-
-        public static bool IsSoftwareInstalled(string applicationName, ProgramVersion? programVersion)
+        private static bool IsSoftwareInstalled(string applicationName, ProgramVersion? programVersion)
         {
             string[] registryKey = new[]
             {
@@ -39,32 +38,40 @@ namespace NFTGenerator
             return registryKey.Any(key => CheckApplication(key, applicationName, programVersion));
         }
 
-        private static void ResolveDependency(string name, string url)
+        private static void ResolveDependency(string name, string url, Logger logger)
         {
             if (!IsSoftwareInstalled(name, null))
             {
-                Logger.LogInfo("Missing dependency: " + name + " not installed", ConsoleColor.Red);
-                Logger.LogInfo("Downloading\n");
+                logger.LogInfo("Missing dependency: " + name + " not installed", ConsoleColor.Red);
+                logger.LogInfo("Downloading\n");
                 string depInstallerPath = DEPENDENCIES_TEMP_LOCATION + name + "_dep.exe";
-                using Process downloadProcess = Processer.Compose("curl " + url + " --output " + depInstallerPath);
+                using Process downloadProcess = new Process()
+                {
+                    EnableRaisingEvents = false
+                };
+                ProcessStartInfo startInfo = new()
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/C curl " + url + " --output " + depInstallerPath
+                };
+                downloadProcess.StartInfo = startInfo;
                 downloadProcess.Start();
                 downloadProcess.WaitForExit();
-                Logger.LogInfo("\n" + name + " successfully downloaded, starting the installation process");
+                logger.LogInfo("\n" + name + " successfully downloaded, starting the installation process");
                 Process proc = Process.Start(depInstallerPath);
-                //proc.StartInfo.Verb = "runas";
                 proc.EnableRaisingEvents = true;
                 proc.Exited += (object sender, EventArgs e) =>
                 {
                     if (proc.ExitCode != 0)
                     {
-                        Logger.LogError("Installation process failed, restart the application\nPress a key to exit");
+                        logger.LogError("Installation process failed, restart the application\nPress a key to exit");
                         File.Delete(depInstallerPath);
                         Console.ReadKey();
                         Environment.Exit(1);
                     }
                     else
                     {
-                        Logger.LogInfo(name + " successfully installed", ConsoleColor.Green);
+                        logger.LogInfo(name + " successfully installed", ConsoleColor.Green);
                         File.Delete(depInstallerPath);
                     }
                 };
@@ -72,7 +79,7 @@ namespace NFTGenerator
             }
             else
             {
-                Logger.LogInfo(name + " dependency resolved", ConsoleColor.Green);
+                logger.LogInfo(name + " dependency resolved", ConsoleColor.Green);
             }
         }
 

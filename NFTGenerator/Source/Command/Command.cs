@@ -1,13 +1,20 @@
-﻿using System;
+﻿// Copyright (c) Matteo Beltrame
+//
+// NFTGenerator -> Command.cs
+//
+// All Rights Reserved
+
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NFTGenerator
 {
     public class Command : IEquatable<Command>
     {
-        public List<Action<Context>> Delegates;
-        public List<Action<Context>> Helpers;
-        public List<string> argumentsNames;
+        public Action<Context> Delegate;
+        public Action<Context> Helper;
+        public List<string> argumentsKeys;
 
         public string Key { get; private set; }
 
@@ -15,9 +22,7 @@ namespace NFTGenerator
 
         private Command()
         {
-            Helpers = new List<Action<Context>>();
-            Delegates = new List<Action<Context>>();
-            argumentsNames = new List<string>();
+            argumentsKeys = new List<string>();
         }
 
         public static Builder Literal(string key, string description, Action<Context> Delegate, Action<Context> Helper = null) => new Builder(key, Delegate, description, Helper);
@@ -29,34 +34,33 @@ namespace NFTGenerator
             return key.Equals(this.Key);
         }
 
-        public void Execute(string[] arguments)
+        public void Execute(string[] arguments, Logger logger)
         {
-            if (arguments != null && arguments.Length > 0)
-            {
-                if (arguments.Length > argumentsNames.Count && arguments[^1].Equals("-h"))
-                {
-                    Logger.LogError("Too many arguments");
-                    return;
-                }
-            }
-            Dictionary<string, string> args = new Dictionary<string, string>();
-            for (int i = 0; i < arguments.Length; i++)
+            List<string> argsList = arguments.ToList();
+            Dictionary<string, string> args = new();
+            for (int i = 0; i < argsList.Count && i < argumentsKeys.Count; i++)
             {
                 if (!arguments[i].Equals("-h"))
                 {
-                    args.Add(argumentsNames[i], arguments[i]);
+                    args.Add(argumentsKeys[i], arguments[i]);
                 }
             }
 
-            if (arguments.Length > 0 && arguments[^1].Equals("-h"))
+            int index = argsList.FindIndex(a => a.Equals("-h"));
+            if (index != -1)
             {
-                Logger.LogInfo(Description);
-                Helpers[arguments.Length - 1]?.Invoke(new Context(args));
+                logger.LogInfo("[" + Description + "]");
+                Helper?.Invoke(new Context(args));
             }
             else
             {
-                Action<Context> del = Delegates[arguments.Length];
-                del?.Invoke(new Context(args));
+                if (arguments.Length > argumentsKeys.Count)
+                {
+                    logger.LogError("Too many arguments");
+                    return;
+                }
+
+                Delegate?.Invoke(new Context(args));
             }
         }
 
@@ -99,18 +103,22 @@ namespace NFTGenerator
                 {
                     Key = key,
                     Description = descprition,
+                    Delegate = Delegate,
+                    Helper = Helper
                 };
-                command.Delegates.Add(Delegate);
-                command.Helpers.Add(Helper);
             }
 
             public Command Build() => command;
 
-            public Builder Then(string argumentName, Action<Context> Delegate, Action<Context> Helper = null)
+            public Builder ArgsKeys(params string[] args)
             {
-                command.Helpers.Add(Helper);
-                command.Delegates.Add(Delegate);
-                command.argumentsNames.Add(argumentName);
+                foreach (string arg in args)
+                {
+                    if (!command.argumentsKeys.Contains(arg))
+                    {
+                        command.argumentsKeys.Add(arg);
+                    }
+                }
                 return this;
             }
         }

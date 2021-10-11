@@ -1,4 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) Matteo Beltrame
+//
+// NFTGenerator -> Json.cs
+//
+// All Rights Reserved
+
+using Newtonsoft.Json;
 using System.IO;
 
 namespace NFTGenerator

@@ -1,4 +1,10 @@
-﻿using System;
+﻿// Copyright (c) Matteo Beltrame
+//
+// NFTGenerator -> Layer.cs
+//
+// All Rights Reserved
+
+using System;
 using System.Collections.Generic;
 
 namespace NFTGenerator

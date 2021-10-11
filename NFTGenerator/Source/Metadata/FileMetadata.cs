@@ -1,6 +1,12 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) Matteo Beltrame
+//
+// NFTGenerator -> FileMetadata.cs
+//
+// All Rights Reserved
 
-namespace NFTGenerator.JsonObjects
+using Newtonsoft.Json;
+
+namespace NFTGenerator
 {
     internal class FileMetadata
     {

@@ -1,11 +1,19 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) Matteo Beltrame
+//
+// NFTGenerator -> AssetMetadata.cs
+//
+// All Rights Reserved
+
+using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace NFTGenerator.JsonObjects
+namespace NFTGenerator
 {
     [System.Serializable]
     internal class AssetMetadata
     {
+        public const string SCHEMA = "Schema/asset_metadata.json";
+
         [JsonProperty("id")]
         public string Id { get; set; }
 
