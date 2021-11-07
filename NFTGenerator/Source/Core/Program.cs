@@ -4,8 +4,11 @@
 //
 // All Rights Reserved
 
+using GibNet;
+using GibNet.Cli;
+using GibNet.Logging;
 using System;
-using System.Threading;
+using System.Threading.Tasks;
 
 namespace NFTGenerator
 {
@@ -14,178 +17,102 @@ namespace NFTGenerator
         private static Context context;
         private static Logger logger;
 
-        private static void CliRun()
-        {
-            string command = string.Empty;
-            logger.LogInfo("\n");
-            logger.LogInfo("CLI (Command line interface) - ", ConsoleColor.DarkCyan, false);
-            logger.LogInfo("help", ConsoleColor.Green, false);
-            logger.LogInfo(" for the available commands", ConsoleColor.DarkCyan);
-            while (!command.Equals("exit"))
-            {
-                logger.LogInfo("\n");
-                logger.LogInfo("> ", ConsoleColor.DarkCyan, false);
-                command = Console.ReadLine();
-                if (!command.Equals("exit"))
-                {
-                    context.CommandsDispatcher.Process(command);
-                }
-            }
-        }
-
-        private static void RegisterCommands()
-        {
-            context.CommandsDispatcher.Register(Commands.OPEN_PATH);
-            context.CommandsDispatcher.Register(Commands.HELP);
-            context.CommandsDispatcher.Register(Commands.GENERATE);
-            context.CommandsDispatcher.Register(Commands.VERIFY);
-            context.CommandsDispatcher.Register(Commands.PURGE);
-            context.CommandsDispatcher.Register(Commands.CALC);
-            context.CommandsDispatcher.Register(Commands.CREATE_FS);
-        }
-
         private static void Initialize()
         {
             Dependencies.Resolve(logger);
             Configurator.Load(logger);
             Filesystem filesystem = new(logger);
             Generator generator = new(filesystem, logger);
-            CommandsDispatcher commandsDispatcher = new(logger);
 
             context = new Context()
             {
                 Filesystem = filesystem,
-                CommandsDispatcher = commandsDispatcher,
                 Generator = generator
             };
             context.Filesystem.Verify(false);
-            RegisterCommands();
         }
 
-        private static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
             Console.Title = "NFTGenerator";
-            logger = new Logger();
+            logger = Logger.ConsoleInstance;
             logger.LogInfo("----- NFT GENERATOR -----\n\n", ConsoleColor.DarkCyan);
             Initialize();
-
-            Thread cliThread = new Thread(new ThreadStart(CliRun));
-            cliThread.Start();
-            cliThread.Join();
-            return;
+            logger.LogInfo("\n");
+            await BuildCli().Run();
         }
 
-        internal static class Commands
+        private static CommandLine BuildCli()
         {
-            public static Command OPEN_PATH = Command.Literal(
-                "open",
-                "Opens a path in the explorer",
-                (ctx) => CommandsDelegates.OpenPathCMD(context, ctx, logger),
-                (ctx) =>
-                {
-                    logger.LogInfo("\tfs: opens the file system folder");
-                    logger.LogInfo("\tlayers: opens the layers folder");
-                    logger.LogInfo("\tres: opens the results folder");
-                    logger.LogInfo("\tconfig: opens the config file");
-                    logger.LogInfo("\troot: opens the root application folder");
-                })
-                .ArgsKeys("path");
-
-            public static Command HELP = Command.Literal(
-                "help",
-                "Display available commands",
-                (ctx) =>
-                {
-                    context.CommandsDispatcher.ForEachCommand(c =>
+            CommandLine cli = CommandLine.Factory(Logger.ConsoleInstance).ExitOn("exit", "quit").Build()
+                .Register(Command.Factory("open")
+                    .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file path"))
+                    .Description("opens a path in the explorer")
+                    .AddAsync(async (handler) =>
                     {
-                        logger.LogInfo("\n" + c.Key + " [" + c.Description + "]");
-                        c.Helper?.Invoke(ctx);
-                    });
-                });
-
-            public static Command GENERATE = Command.Literal(
-                "generate",
-                "Start the generation process",
-                (ctx) =>
-                {
-                    if (context.Filesystem.Verify(false))
+                        await Task.Run(() => CommandsDelegates.OpenPathCMD(context, handler.GetPositional(0), logger));
+                    }))
+                .Register(Command.Factory("generate")
+                    .Description("start the generation process")
+                    .ArgumentsHandler(ArgumentsHandler.Factory())
+                    .AddAsync(async (handler) =>
                     {
-                        PURGE.Execute(new string[] { "res", "-f" }, logger);
-                        context.Generator.ResetGenerationParameters();
-                        int amountToMint = Configurator.Options.Generation.SerieCount;
-                        if (amountToMint == 0)
+                        await Task.Run(() =>
                         {
-                            logger.LogWarning("Nothing to generate, amount to mint is set to 0");
-                        }
-                        else if (amountToMint < 0)
-                        {
-                            logger.LogError("Negative amount to mint (" + amountToMint + ") in config file");
-                        }
-                        else
-                        {
-                            for (int j = 0; j < amountToMint; j++)
+                            if (context.Filesystem.Verify(false))
                             {
-                                context.Generator.GenerateSingle(j);
+                                Commands.PURGE.Execute(new string[] { "res", "/f" });
+                                context.Generator.ResetGenerationParameters();
+                                int amountToMint = Configurator.Options.Generation.SerieCount;
+                                if (amountToMint == 0)
+                                {
+                                    logger.LogWarning("Nothing to generate, amount to mint is set to 0");
+                                }
+                                else if (amountToMint < 0)
+                                {
+                                    logger.LogError("Negative amount to mint (" + amountToMint + ") in config file");
+                                }
+                                else
+                                {
+                                    for (int j = 0; j < amountToMint; j++)
+                                    {
+                                        context.Generator.GenerateSingle(j);
+                                    }
+                                }
                             }
-                        }
-                    }
-                });
-
-            public static Command VERIFY = Command.Literal(
-                "verify",
-                "Verify a path",
-                (ctx) => CommandsDelegates.VerifyCMD(context, ctx, logger),
-                (ctx) =>
-                {
-                    logger.LogInfo("\tfs: verify file system");
-                    logger.LogInfo("\tres: verify the results");
-                    logger.LogInfo("\t\tclean: also delete all invalid assets");
-                })
-                .ArgsKeys("path", "clean");
-
-            public static Command PURGE = Command.Literal(
-                "purge",
-                "Clears all items inside a path",
-                (ctx) => CommandsDelegates.PurgePathCMD(context, ctx, logger),
-                (ctx) =>
-                {
-                    logger.LogInfo("\tres: clear the results folder");
-                    logger.LogInfo("\tlayers: clear the layers folder");
-                })
-                .ArgsKeys("path", "force");
-
-            public static Command CREATE_FS = Command.Literal(
-                "create-fs",
-                "Create a schema for a filesystem",
-                (ctx) => CommandsDelegates.CreateFilesystemSchemaCMD(context, ctx, logger),
-                (ctx) =>
-                {
-                    logger.LogInfo("\tlayer_n: number of layers");
-                    logger.LogInfo("\t\tassets_n: number of assets each layer");
-                })
-                .ArgsKeys("layers_n", "assets_n");
-
-            public static Command CALC = Command.Literal(
-                "calc",
-                "Calculate some math regarded the filesystem",
-                (ctx) =>
-                {
-                    int perms = 1;
-                    if (context.Filesystem.Layers.Count == 0) perms = 0;
-                    foreach (Layer layer in context.Filesystem.Layers)
+                        });
+                    }))
+                .Register(Command.Factory("verify")
+                    .Description("verify a certain path")
+                    .ArgumentsHandler(ArgumentsHandler.Factory().Positional("path to verify").Flag("/c", "clean invalid assets"))
+                    .AddAsync(async (handler) =>
                     {
-                        if (layer.Assets.Count > 0)
+                        await Task.Run(() =>
                         {
-                            perms *= layer.Assets.Count;
-                        }
-                    }
-                    logger.LogInfo("Permutations: " + perms);
-                },
-                (ctx) =>
+                            CommandsDelegates.VerifyCMD(context, handler.GetPositional(0), handler.HasFlag("/c"), logger);
+                        });
+                    }))
+                .Register(Commands.PURGE)
+                .Register(Command.Factory("create-fs")
+                    .Description("create the blueprint of a filesystem")
+                    .ArgumentsHandler(ArgumentsHandler.Factory().Positional("layers number").Positional("per layer assets number"))
+                    .AddAsync(async (handler) =>
+                    {
+                        await Task.Run(() =>
+                        {
+                            CommandsDelegates.CreateFilesystemSchemaCMD(context, handler.GetPositional(0), handler.GetPositional(1), logger);
+                        });
+                    }));
+
+            cli.Register(Command.Factory("help")
+                .Description("display the available commands")
+                .ArgumentsHandler(ArgumentsHandler.Factory())
+                .AddAsync(async (handler) =>
                 {
-                    logger.LogInfo("\tperms: calculate the mathematical permutations number with the current correct assets in the filesystem");
-                })
-                .ArgsKeys("param");
+                    logger.LogInfo(cli.ToString());
+                    await Task.FromResult<object>(null);
+                }));
+            return cli;
         }
 
         internal class Context
@@ -193,8 +120,20 @@ namespace NFTGenerator
             public Generator Generator { get; init; }
 
             public Filesystem Filesystem { get; init; }
+        }
 
-            public CommandsDispatcher CommandsDispatcher { get; init; }
+        private static class Commands
+        {
+            public static readonly Command PURGE = Command.Factory("purge")
+                    .Description("verify a certain path")
+                    .ArgumentsHandler(ArgumentsHandler.Factory().Positional("path to purge").Flag("/f", "skip confirmation"))
+                    .AddAsync(async (handler) =>
+                    {
+                        await Task.Run(() =>
+                        {
+                            CommandsDelegates.PurgePathCMD(context, handler.GetPositional(0), handler.HasFlag("/f"), logger);
+                        });
+                    });
         }
     }
 }

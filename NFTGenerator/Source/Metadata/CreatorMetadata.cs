@@ -4,6 +4,7 @@
 //
 // All Rights Reserved
 
+using GibNet.Logging;
 using Newtonsoft.Json;
 
 namespace NFTGenerator
@@ -17,16 +18,16 @@ namespace NFTGenerator
         [JsonProperty("share")]
         public int Share { get; set; }
 
-        public bool Valid(Logger logger)
+        public bool Valid()
         {
             if (Address.Equals(string.Empty))
             {
-                logger.LogError("Creator Address is empty");
+                Logger.ConsoleInstance.LogError("Creator Address is empty");
                 return false;
             }
             if (Share <= 0)
             {
-                logger.LogError("Creator Share is set to " + Share);
+                Logger.ConsoleInstance.LogError("Creator Share is set to " + Share);
                 return false;
             }
             return true;

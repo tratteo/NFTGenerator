@@ -4,6 +4,8 @@
 //
 // All Rights Reserved
 
+using GibNet.Logging;
+using GibNet.Serialization;
 using System.IO;
 using System.Linq;
 
@@ -67,7 +69,7 @@ namespace NFTGenerator
                 return false;
             }
 
-            asset.Metadata = Json.Deserialize<AssetMetadata>(metadataPath);
+            asset.Metadata = Serializer.DeserializeJson<AssetMetadata>(string.Empty, metadataPath);
             asset.AssetAbsolutePath = assetPath;
             return true;
         }

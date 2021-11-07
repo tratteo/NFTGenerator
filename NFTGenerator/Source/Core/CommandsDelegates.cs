@@ -4,6 +4,9 @@
 //
 // All Rights Reserved
 
+using GibNet;
+using GibNet.Logging;
+using GibNet.Serialization;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -13,12 +16,9 @@ namespace NFTGenerator
 {
     internal static class CommandsDelegates
     {
-        public static void VerifyCMD(Program.Context pctx, Command.Context ctx, Logger logger)
+        public static void VerifyCMD(Program.Context pctx, string path, bool clean, Logger logger)
         {
-            string cleanArg = ctx.GetArg("clean");
-            bool clean = cleanArg.Equals("clean");
-            string arg = ctx.GetArg("path");
-            switch (arg)
+            switch (path)
             {
                 case "res":
                     bool valid = true;
@@ -50,12 +50,12 @@ namespace NFTGenerator
                         }
                         if (assets.Length != metadata.Length)
                         {
-                            logger.LogError("There are different numbers of assets and metadata. How the fuck did you manage to do such a thing"); return;
+                            logger.LogError("There are different numbers of assets and metadata. How the fuck did you manage to do such a thing");
                             valid = false;
                         }
                         foreach (string data in metadata)
                         {
-                            NFTMetadata nftData = Json.Deserialize<NFTMetadata>(data);
+                            NFTMetadata nftData = Serializer.DeserializeJson<NFTMetadata>(string.Empty, data);
                             if (!nftData.Valid(logger))
                             {
                                 logger.LogError("Errors on metadata: " + data);
@@ -76,9 +76,8 @@ namespace NFTGenerator
             }
         }
 
-        public static void OpenPathCMD(Program.Context pctx, Command.Context ctx, Logger logger)
+        public static void OpenPathCMD(Program.Context pctx, string path, Logger logger)
         {
-            string path = ctx.GetArg("path");
             switch (path)
             {
                 case "fs":
@@ -105,15 +104,15 @@ namespace NFTGenerator
             }
         }
 
-        public static void CreateFilesystemSchemaCMD(Program.Context pctx, Command.Context ctx, Logger logger)
+        public static void CreateFilesystemSchemaCMD(Program.Context pctx, string layers, string assets, Logger logger)
         {
             int layersNumber = 0, assetsNumber = 0;
             try
             {
-                layersNumber = int.Parse(ctx.GetArg("layers_n"));
-                assetsNumber = int.Parse(ctx.GetArg("assets_n"));
+                layersNumber = int.Parse(layers);
+                assetsNumber = int.Parse(assets);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 logger.LogError("Arguments must be integers");
                 return;
@@ -125,37 +124,21 @@ namespace NFTGenerator
                 {
                     string assetName = Configurator.Options.FilesystemPath + "\\layers\\" + layerName + "\\asset_" + j;
                     Directory.CreateDirectory(assetName);
-                    Json.Serialize(Json.Deserialize<AssetMetadata>(AssetMetadata.SCHEMA), assetName + "\\" + j.ToString() + ".json");
+                    Serializer.SerializeJson(Serializer.DeserializeJson<AssetMetadata>(string.Empty, AssetMetadata.SCHEMA), string.Empty, assetName + "\\" + j.ToString() + ".json");
                 }
             }
         }
 
-        public static void PurgePathCMD(Program.Context pctx, Command.Context ctx, Logger logger)
+        public static void PurgePathCMD(Program.Context pctx, string path, bool force, Logger logger)
         {
-            string path = ctx.GetArg("path");
-            string force = ctx.GetArg("force");
             string answer;
-            DirectoryInfo dInfo;
             switch (path)
             {
                 case "res":
-                    if (force != string.Empty || force == "-f")
+                    if (force)
                     {
-                        int amount = 0;
-                        DirectoryInfo di = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.ResultsPath);
-                        foreach (FileInfo file in di.GetFiles())
-                        {
-                            amount++;
-                            file.Delete();
-                        }
-                        logger.LogInfo("Deleted " + amount + " files");
-                        amount = 0;
-                        foreach (DirectoryInfo dir in di.GetDirectories())
-                        {
-                            amount++;
-                            dir.Delete(true);
-                        }
-                        logger.LogInfo("Deleted " + amount + " directories");
+                        PurgeRecursive(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.ResultsPath, logger);
+                        logger.LogInfo("Purged results");
                     }
                     else
                     {
@@ -163,21 +146,8 @@ namespace NFTGenerator
                         answer = Console.ReadLine();
                         if (answer.ToLower().Equals("y"))
                         {
-                            int amount = 0;
-                            dInfo = new(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.ResultsPath);
-                            foreach (FileInfo file in dInfo.EnumerateFiles())
-                            {
-                                amount++;
-                                file.Delete();
-                            }
-                            logger.LogInfo("Deleted " + amount + " files");
-                            amount = 0;
-                            foreach (DirectoryInfo dir in dInfo.EnumerateDirectories())
-                            {
-                                amount++;
-                                dir.Delete(true);
-                            }
-                            logger.LogInfo("Deleted " + amount + " directories");
+                            PurgeRecursive(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.ResultsPath, logger);
+                            logger.LogInfo("Purged results");
                         }
                     }
                     break;
@@ -188,20 +158,30 @@ namespace NFTGenerator
                     answer = Console.ReadLine();
                     if (answer.ToLower().Equals("y"))
                     {
-                        dInfo = new(Configurator.Options.FilesystemPath + "\\layers");
-                        foreach (FileInfo file in dInfo.EnumerateFiles())
-                        {
-                            file.Delete();
-                        }
-                        foreach (DirectoryInfo dir in dInfo.EnumerateDirectories())
-                        {
-                            dir.Delete(true);
-                        }
-
+                        PurgeRecursive(Configurator.Options.FilesystemPath + "\\layers", logger);
                         logger.LogInfo("Purged layers");
                     }
                     break;
             }
+        }
+
+        private static void PurgeRecursive(string path, Logger logger = null)
+        {
+            int amount = 0;
+            DirectoryInfo dInfo = new DirectoryInfo(path);
+            foreach (FileInfo file in dInfo.EnumerateFiles())
+            {
+                amount++;
+                file.Delete();
+            }
+            logger?.LogInfo("Deleted " + amount + " files");
+            amount = 0;
+            foreach (DirectoryInfo dir in dInfo.EnumerateDirectories())
+            {
+                amount++;
+                dir.Delete(true);
+            }
+            logger?.LogInfo("Deleted " + amount + " directories");
         }
     }
 }

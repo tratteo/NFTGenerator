@@ -4,6 +4,7 @@
 //
 // All Rights Reserved
 
+using GibNet.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;

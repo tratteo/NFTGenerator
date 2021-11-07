@@ -4,6 +4,8 @@
 //
 // All Rights Reserved
 
+using GibNet.Logging;
+using GibNet.Serialization;
 using System;
 using System.Collections.Generic;
 
@@ -79,7 +81,7 @@ namespace NFTGenerator
             }
             if (!Configurator.Options.Generation.AssetsOnly)
             {
-                Json.Serialize(meta, Configurator.Options.ResultsPath + "\\" + index + ".json");
+                Serializer.SerializeJson(meta, string.Empty, Configurator.Options.ResultsPath + "\\" + index + ".json");
             }
             GeneratedHashes.Add(mintedHash);
         }

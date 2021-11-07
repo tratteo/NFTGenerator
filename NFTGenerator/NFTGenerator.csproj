@@ -37,6 +37,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="GibNet">
+      <HintPath>..\..\..\GibNet\GibNet\bin\Release\net5.0\GibNet.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="blueprint.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

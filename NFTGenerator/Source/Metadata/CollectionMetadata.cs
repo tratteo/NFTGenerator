@@ -4,6 +4,7 @@
 //
 // All Rights Reserved
 
+using GibNet.Logging;
 using Newtonsoft.Json;
 
 namespace NFTGenerator
@@ -17,17 +18,17 @@ namespace NFTGenerator
         [JsonProperty("family")]
         public string Family { get; set; }
 
-        public bool Valid(Logger logger)
+        public bool Valid()
         {
             bool valid = true;
             if (Name.Equals(string.Empty))
             {
-                logger.LogError("[Collection] Name is empty");
+                Logger.ConsoleInstance.LogError("[Collection] Name is empty");
                 valid = false;
             }
             if (Family.Equals(string.Empty))
             {
-                logger.LogError("[Colleciton] Family is empty");
+                Logger.ConsoleInstance.LogError("[Colleciton] Family is empty");
                 valid = false;
             }
             return valid;

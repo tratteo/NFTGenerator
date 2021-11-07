@@ -4,6 +4,8 @@
 //
 // All Rights Reserved
 
+using GibNet.Logging;
+using GibNet.Serialization;
 using System;
 using System.IO;
 
@@ -25,11 +27,11 @@ namespace NFTGenerator
                 logger.LogWarning("Options file not found, creating a new one in " + OPTIONS_PATH + OPTIONS_NAME);
                 Directory.CreateDirectory(OPTIONS_PATH);
                 Options = new Options();
-                Json.Serialize(Options, OPTIONS_PATH + OPTIONS_NAME);
+                Serializer.SerializeJson(Options, string.Empty, OPTIONS_PATH + OPTIONS_NAME);
             }
             else
             {
-                Options = Json.Deserialize<Options>(OPTIONS_PATH + OPTIONS_NAME);
+                Options = Serializer.DeserializeJson<Options>(string.Empty, OPTIONS_PATH + OPTIONS_NAME);
             }
             logger.LogInfo("Loading configuration file and setting up config watcher...");
             configWatcher = new FileSystemWatcher(AppDomain.CurrentDomain.BaseDirectory + OPTIONS_PATH)
@@ -41,7 +43,7 @@ namespace NFTGenerator
             };
             configWatcher.Changed += (sender, e) =>
             {
-                Options = Json.Deserialize<Options>(OPTIONS_PATH + OPTIONS_NAME);
+                Options = Serializer.DeserializeJson<Options>(string.Empty, OPTIONS_PATH + OPTIONS_NAME);
             };
         }
     }

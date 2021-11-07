@@ -4,6 +4,8 @@
 //
 // All Rights Reserved
 
+using GibNet.Logging;
+using GibNet.Serialization;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
@@ -44,7 +46,7 @@ namespace NFTGenerator
         [JsonProperty("properties")]
         public PropertiesMetadata Properties { get; set; }
 
-        public static NFTMetadata Schema() => Json.Deserialize<NFTMetadata>(SCHEMA);
+        public static NFTMetadata Schema() => Serializer.DeserializeJson<NFTMetadata>(string.Empty, SCHEMA);
 
         public bool Valid(Logger logger)
         {
@@ -76,11 +78,11 @@ namespace NFTGenerator
             {
                 logger.LogWarning("Field ExternalUrl is empty");
             }
-            if (!Collection.Valid(logger))
+            if (!Collection.Valid())
             {
                 valid = false;
             }
-            if (!Properties.Valid(logger))
+            if (!Properties.Valid())
             {
                 valid = false;
             }

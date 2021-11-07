@@ -4,6 +4,7 @@
 //
 // All Rights Reserved
 
+using GibNet.Logging;
 using System.IO;
 
 namespace NFTGenerator
