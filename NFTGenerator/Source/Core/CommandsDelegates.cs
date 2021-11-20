@@ -1,10 +1,5 @@
-﻿// Copyright (c) Matteo Beltrame
-//
-// NFTGenerator -> CommandsDelegates.cs
-//
-// All Rights Reserved
+﻿// Copyright Matteo Beltrame
 
-using GibNet;
 using GibNet.Logging;
 using GibNet.Serialization;
 using System;
@@ -12,176 +7,181 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace NFTGenerator
+namespace NFTGenerator;
+
+internal static class CommandsDelegates
 {
-    internal static class CommandsDelegates
+    public static void VerifyCMD(Filesystem filesystem, Generator generator, string path, bool clean, Logger logger)
     {
-        public static void VerifyCMD(Program.Context pctx, string path, bool clean, Logger logger)
+        switch (path)
         {
-            switch (path)
-            {
-                case "res":
-                    bool valid = true;
-                    string[] assets = Directory.GetFiles(Configurator.Options.ResultsPath, "*.*").Where(s => s.EndsWith(".gif") || s.EndsWith(".jpeg") || s.EndsWith(".png")).ToArray();
-                    if (assets.Length <= 0)
+            case "res":
+                var valid = true;
+                var assets = Directory.GetFiles(Configurator.Options.ResultsPath, "*.*").Where(s => s.EndsWith(".gif") || s.EndsWith(".jpeg") || s.EndsWith(".png")).ToArray();
+                if (assets.Length <= 0)
+                {
+                    logger.LogWarning("There is nothing in here");
+                    return;
+                }
+                var extension = string.Empty;
+                foreach (var asset in assets)
+                {
+                    FileInfo file = new(asset);
+                    if (!extension.Equals(string.Empty) && !extension.Equals(file.Extension))
+                    {
+                        logger.LogError("Found results with different extensions! This should never happen WTF");
+                        valid = false;
+                    }
+                }
+
+                if (!Configurator.Options.Generation.AssetsOnly)
+                {
+                    var metadata = Directory.GetFiles(Configurator.Options.ResultsPath, "*.json");
+
+                    if (assets.Length == metadata.Length && metadata.Length == 0)
                     {
                         logger.LogWarning("There is nothing in here");
                         return;
                     }
-                    string extension = string.Empty;
-                    foreach (string asset in assets)
+                    if (assets.Length != metadata.Length)
                     {
-                        FileInfo file = new(asset);
-                        if (!extension.Equals(string.Empty) && !extension.Equals(file.Extension))
+                        logger.LogError("There are different numbers of assets and metadata. How the fuck did you manage to do such a thing");
+                        valid = false;
+                    }
+                    foreach (var data in metadata)
+                    {
+                        NFTMetadata nftData = Serializer.DeserializeJson<NFTMetadata>(string.Empty, data);
+                        if (!nftData.Valid(logger))
                         {
-                            logger.LogError("Found results with different extensions! This should never happen WTF");
+                            logger.LogError("Errors on metadata: " + data);
+                            logger.LogInfo("\n");
                             valid = false;
                         }
                     }
-
-                    if (!Configurator.Options.Generation.AssetsOnly)
-                    {
-                        string[] metadata = Directory.GetFiles(Configurator.Options.ResultsPath, "*.json");
-
-                        if (assets.Length == metadata.Length && metadata.Length == 0)
-                        {
-                            logger.LogWarning("There is nothing in here");
-                            return;
-                        }
-                        if (assets.Length != metadata.Length)
-                        {
-                            logger.LogError("There are different numbers of assets and metadata. How the fuck did you manage to do such a thing");
-                            valid = false;
-                        }
-                        foreach (string data in metadata)
-                        {
-                            NFTMetadata nftData = Serializer.DeserializeJson<NFTMetadata>(string.Empty, data);
-                            if (!nftData.Valid(logger))
-                            {
-                                logger.LogError("Errors on metadata: " + data);
-                                logger.LogInfo("\n");
-                                valid = false;
-                            }
-                        }
-                    }
-                    if (valid)
-                    {
-                        logger.LogInfo("All good in the results folder");
-                    }
-                    break;
-
-                case "fs":
-                    pctx.Filesystem.Verify(true, clean);
-                    break;
-            }
-        }
-
-        public static void OpenPathCMD(Program.Context pctx, string path, Logger logger)
-        {
-            switch (path)
-            {
-                case "fs":
-                    Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath);
-                    break;
-
-                case "res": Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.ResultsPath); break;
-
-                case "layers":
-                    Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\layers"); break;
-
-                case "config":
-                    using (Process fileopener = new())
-                    {
-                        fileopener.StartInfo.FileName = "explorer"; fileopener.StartInfo.Arguments = Configurator.OPTIONS_PATH + Configurator.OPTIONS_NAME; fileopener.Start();
-                    }
-                    break;
-
-                case "root": Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory); break;
-
-                default:
-                    logger.LogWarning("Unable to find path");
-                    break;
-            }
-        }
-
-        public static void CreateFilesystemSchemaCMD(Program.Context pctx, string layers, string assets, Logger logger)
-        {
-            int layersNumber = 0, assetsNumber = 0;
-            try
-            {
-                layersNumber = int.Parse(layers);
-                assetsNumber = int.Parse(assets);
-            }
-            catch (Exception)
-            {
-                logger.LogError("Arguments must be integers");
-                return;
-            }
-            for (int i = 0; i < layersNumber; i++)
-            {
-                string layerName = "layer_" + i;
-                for (int j = 0; j < assetsNumber; j++)
-                {
-                    string assetName = Configurator.Options.FilesystemPath + "\\layers\\" + layerName + "\\asset_" + j;
-                    Directory.CreateDirectory(assetName);
-                    Serializer.SerializeJson(Serializer.DeserializeJson<AssetMetadata>(string.Empty, AssetMetadata.SCHEMA), string.Empty, assetName + "\\" + j.ToString() + ".json");
                 }
+                if (valid)
+                {
+                    logger.LogInfo("All good in the results folder");
+                }
+                break;
+
+            case "fs":
+                filesystem.Verify(true, clean);
+                break;
+        }
+    }
+
+    public static void OpenPathCMD(Filesystem filesystem, Generator generator, string path, Logger logger)
+    {
+        switch (path)
+        {
+            case "fs":
+                Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath);
+                break;
+
+            case "res":
+                Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.ResultsPath);
+                break;
+
+            case "layers":
+                Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\layers");
+                break;
+
+            case "config":
+                using (Process fileopener = new())
+                {
+                    fileopener.StartInfo.FileName = "explorer"; fileopener.StartInfo.Arguments = Paths.CONFIG_PATH + Configurator.OPTIONS_NAME; fileopener.Start();
+                }
+                break;
+
+            case "root":
+                Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory);
+                break;
+
+            default:
+                logger.LogWarning("Unable to find path");
+                break;
+        }
+    }
+
+    public static void CreateFilesystemSchemaCMD(Filesystem filesystem, Generator generator, string layers, string assets, Logger logger)
+    {
+        int layersNumber;
+        int assetsNumber;
+        try
+        {
+            layersNumber = int.Parse(layers);
+            assetsNumber = int.Parse(assets);
+        }
+        catch (Exception)
+        {
+            logger.LogError("Arguments must be integers");
+            return;
+        }
+        for (var i = 0; i < layersNumber; i++)
+        {
+            var layerName = "layer_" + i;
+            for (var j = 0; j < assetsNumber; j++)
+            {
+                var assetName = Configurator.Options.FilesystemPath + "\\layers\\" + layerName + "\\asset_" + j;
+                Directory.CreateDirectory(assetName);
+                Serializer.SerializeJson(AssetMetadata.Blueprint(), string.Empty, assetName + "\\" + j.ToString() + ".json");
             }
         }
+    }
 
-        public static void PurgePathCMD(Program.Context pctx, string path, bool force, Logger logger)
+    public static void PurgePathCMD(Filesystem filesystem, Generator generator, string path, bool force, Logger logger)
+    {
+        string answer;
+        switch (path)
         {
-            string answer;
-            switch (path)
-            {
-                case "res":
-                    if (force)
+            case "res":
+                if (force)
+                {
+                    PurgeRecursive(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.ResultsPath, logger);
+                    logger.LogInfo("Purged results");
+                }
+                else
+                {
+                    logger.LogInfo("Are you sure you want to purge results folder? (Y/N)", ConsoleColor.DarkGreen);
+                    answer = Console.ReadLine();
+                    if (answer.ToLower().Equals("y"))
                     {
                         PurgeRecursive(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.ResultsPath, logger);
                         logger.LogInfo("Purged results");
                     }
-                    else
-                    {
-                        logger.LogInfo("Are you sure you want to purge results folder? (Y/N)", ConsoleColor.DarkGreen);
-                        answer = Console.ReadLine();
-                        if (answer.ToLower().Equals("y"))
-                        {
-                            PurgeRecursive(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.ResultsPath, logger);
-                            logger.LogInfo("Purged results");
-                        }
-                    }
-                    break;
+                }
+                break;
 
-                case "layers":
+            case "layers":
 
-                    logger.LogInfo("Are you sure you want to purge layers? (Y/N)", ConsoleColor.DarkGreen);
-                    answer = Console.ReadLine();
-                    if (answer.ToLower().Equals("y"))
-                    {
-                        PurgeRecursive(Configurator.Options.FilesystemPath + "\\layers", logger);
-                        logger.LogInfo("Purged layers");
-                    }
-                    break;
-            }
+                logger.LogInfo("Are you sure you want to purge layers? (Y/N)", ConsoleColor.DarkGreen);
+                answer = Console.ReadLine();
+                if (answer.ToLower().Equals("y"))
+                {
+                    PurgeRecursive(Configurator.Options.FilesystemPath + "\\layers", logger);
+                    logger.LogInfo("Purged layers");
+                }
+                break;
         }
+    }
 
-        private static void PurgeRecursive(string path, Logger logger = null)
+    private static void PurgeRecursive(string path, Logger logger = null)
+    {
+        var amount = 0;
+        DirectoryInfo dInfo = new DirectoryInfo(path);
+        foreach (FileInfo file in dInfo.EnumerateFiles())
         {
-            int amount = 0;
-            DirectoryInfo dInfo = new DirectoryInfo(path);
-            foreach (FileInfo file in dInfo.EnumerateFiles())
-            {
-                amount++;
-                file.Delete();
-            }
-            logger?.LogInfo("Deleted " + amount + " files");
-            amount = 0;
-            foreach (DirectoryInfo dir in dInfo.EnumerateDirectories())
-            {
-                amount++;
-                dir.Delete(true);
-            }
-            logger?.LogInfo("Deleted " + amount + " directories");
+            amount++;
+            file.Delete();
         }
+        logger?.LogInfo("Deleted " + amount + " files");
+        amount = 0;
+        foreach (DirectoryInfo dir in dInfo.EnumerateDirectories())
+        {
+            amount++;
+            dir.Delete(true);
+        }
+        logger?.LogInfo("Deleted " + amount + " directories");
     }
 }

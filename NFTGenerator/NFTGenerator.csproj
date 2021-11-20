@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
     <NoWin32Manifest>true</NoWin32Manifest>
     <Version>1.0.1</Version>
@@ -16,15 +16,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Schema\asset_metadata.json" />
-    <None Remove="Schema\nft_metadata.json" />
+    <None Remove="Blueprint\asset_metadata.json" />
+    <None Remove="Blueprint\nft_metadata.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Schema\asset_metadata.json">
+    <EmbeddedResource Include="Blueprint\asset_metadata.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
-    <EmbeddedResource Include="Schema\nft_metadata.json">
+    <EmbeddedResource Include="Blueprint\nft_metadata.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>
@@ -38,7 +38,7 @@
 
   <ItemGroup>
     <Reference Include="GibNet">
-      <HintPath>..\..\..\GibNet\GibNet\bin\Release\net5.0\GibNet.dll</HintPath>
+      <HintPath>..\..\..\GibNet\GibNet\bin\Release\net6.0\GibNet.dll</HintPath>
     </Reference>
   </ItemGroup>
 

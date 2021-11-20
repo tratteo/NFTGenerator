@@ -1,22 +1,17 @@
-﻿// Copyright (c) Matteo Beltrame
-//
-// NFTGenerator -> FileMetadata.cs
-//
-// All Rights Reserved
+﻿// Copyright Matteo Beltrame
 
 using Newtonsoft.Json;
 
-namespace NFTGenerator
+namespace NFTGenerator;
+
+internal class FileMetadata
 {
-    internal class FileMetadata
-    {
-        [JsonProperty("uri")]
-        public string Uri { get; set; }
+    [JsonProperty("uri")]
+    public string Uri { get; set; }
 
-        [JsonProperty("type")]
-        public string Type { get; set; }
+    [JsonProperty("type")]
+    public string Type { get; set; }
 
-        [JsonProperty("cdn")]
-        public bool Cdn { get; set; }
-    }
+    [JsonProperty("cdn")]
+    public bool Cdn { get; set; }
 }

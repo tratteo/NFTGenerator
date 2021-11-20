@@ -1,102 +1,97 @@
-﻿// Copyright (c) Matteo Beltrame
-//
-// NFTGenerator -> NFTMetadata.cs
-//
-// All Rights Reserved
+﻿// Copyright Matteo Beltrame
 
 using GibNet.Logging;
 using GibNet.Serialization;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace NFTGenerator
+namespace NFTGenerator;
+
+[System.Serializable]
+internal class NFTMetadata
 {
-    [System.Serializable]
-    internal class NFTMetadata
+    public const string BLUEPRINT = "nft_metadata.json";
+
+    [JsonProperty("name")]
+    public string Name { get; set; }
+
+    [JsonProperty("symbol")]
+    public string Symbol { get; set; }
+
+    [JsonProperty("description")]
+    public string Description { get; set; }
+
+    [JsonProperty("seller_fee_basis_points")]
+    public int SellerFeeBasisPoints { get; set; }
+
+    [JsonProperty("image")]
+    public string Image { get; set; }
+
+    [JsonProperty("animation_url")]
+    public string AnimationUrl { get; set; }
+
+    [JsonProperty("external_url")]
+    public string ExternalUrl { get; set; }
+
+    [JsonProperty("attributes")]
+    public List<AttributeMetadata> Attributes { get; set; }
+
+    [JsonProperty("collection")]
+    public CollectionMetadata Collection { get; set; }
+
+    [JsonProperty("properties")]
+    public PropertiesMetadata Properties { get; set; }
+
+    public static NFTMetadata Blueprint() => Serializer.DeserializeJson<NFTMetadata>(Paths.BLUEPRINT_PATH, BLUEPRINT);
+
+    public bool Valid(Logger logger)
     {
-        public const string SCHEMA = "Schema/nft_metadata.json";
-
-        [JsonProperty("name")]
-        public string Name { get; set; }
-
-        [JsonProperty("symbol")]
-        public string Symbol { get; set; }
-
-        [JsonProperty("description")]
-        public string Description { get; set; }
-
-        [JsonProperty("seller_fee_basis_points")]
-        public int SellerFeeBasisPoints { get; set; }
-
-        [JsonProperty("image")]
-        public string Image { get; set; }
-
-        [JsonProperty("animation_url")]
-        public string AnimationUrl { get; set; }
-
-        [JsonProperty("external_url")]
-        public string ExternalUrl { get; set; }
-
-        [JsonProperty("attributes")]
-        public List<AttributeMetadata> Attributes { get; set; }
-
-        [JsonProperty("collection")]
-        public CollectionMetadata Collection { get; set; }
-
-        [JsonProperty("properties")]
-        public PropertiesMetadata Properties { get; set; }
-
-        public static NFTMetadata Schema() => Serializer.DeserializeJson<NFTMetadata>(string.Empty, SCHEMA);
-
-        public bool Valid(Logger logger)
+        var valid = true;
+        if (Name.Equals(string.Empty))
         {
-            bool valid = true;
-            if (Name.Equals(string.Empty))
-            {
-                logger.LogError("Field Name is empty");
-                valid = false;
-            }
-            if (Description.Equals(string.Empty))
-            {
-                logger.LogWarning("Field Description is empty");
-            }
-            if (Symbol.Equals(string.Empty))
-            {
-                logger.LogError("Field Symbol is empty");
-                valid = false;
-            }
-            if (SellerFeeBasisPoints.Equals(0))
-            {
-                logger.LogWarning("SellerFeeBasisPoints is set to 0, you don't want to earn anything from sales?");
-            }
-            if (!Image.Equals("image.png"))
-            {
-                logger.LogError("Since Metaplex developers are weirdos, image field MUST be populated with <image.png>");
-                valid = false;
-            }
-            if (ExternalUrl.Equals(string.Empty))
-            {
-                logger.LogWarning("Field ExternalUrl is empty");
-            }
-            if (!Collection.Valid())
-            {
-                valid = false;
-            }
-            if (!Properties.Valid())
-            {
-                valid = false;
-            }
-            return valid;
+            logger.LogError("Field Name is empty");
+            valid = false;
         }
-
-        public void AddAttributes(IEnumerable<AttributeMetadata> attributes)
+        if (Description.Equals(string.Empty))
         {
-            foreach (AttributeMetadata data in attributes)
+            logger.LogWarning("Field Description is empty");
+        }
+        if (Symbol.Equals(string.Empty))
+        {
+            logger.LogError("Field Symbol is empty");
+            valid = false;
+        }
+        if (SellerFeeBasisPoints.Equals(0))
+        {
+            logger.LogWarning("SellerFeeBasisPoints is set to 0, you don't want to earn anything from sales?");
+        }
+        if (!Image.Equals("image.png"))
+        {
+            logger.LogError("Since Metaplex developers are weirdos, image field MUST be populated with <image.png>");
+            valid = false;
+        }
+        if (ExternalUrl.Equals(string.Empty))
+        {
+            logger.LogWarning("Field ExternalUrl is empty");
+        }
+        if (!Collection.Valid())
+        {
+            valid = false;
+        }
+        if (!Properties.Valid())
+        {
+            valid = false;
+        }
+        return valid;
+    }
+
+    public void AddAttributes(IEnumerable<AttributeMetadata> attributes)
+    {
+        foreach (AttributeMetadata data in attributes)
+        {
+            if (!Attributes.Contains(data))
             {
-                if (!Attributes.Contains(data))
-                {
-                    Attributes.Add(data);
-                }
+                Attributes.Add(data);
             }
         }
     }
