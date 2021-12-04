@@ -21,7 +21,7 @@ internal class Asset
     {
     }
 
-    public static bool TryCreate(out Asset asset, string resourceAbsolutePath, int id, Logger logger)
+    public static bool TryParse(out Asset asset, string resourceAbsolutePath, int id, Logger logger)
     {
         asset = new Asset
         {
@@ -30,7 +30,7 @@ internal class Asset
         var metadata = Directory.GetFiles(resourceAbsolutePath, "*.json");
         if (metadata.Length > 1)
         {
-            logger.LogWarning("found multiple metadata in path: " + resourceAbsolutePath);
+            logger.LogWarning($"Found multiple metadata in path: {resourceAbsolutePath}");
         }
         else if (metadata.Length <= 0)
         {
@@ -44,11 +44,10 @@ internal class Asset
         var assets = Directory.GetFiles(resourceAbsolutePath, "*.*").Where(s => s.EndsWith(".gif") || s.EndsWith(".jpeg") || s.EndsWith(".png")).ToArray();
         if (assets.Length > 1)
         {
-            logger.LogWarning("found multiple assets in path: " + resourceAbsolutePath);
+            logger.LogWarning($"Found multiple assets in path: {resourceAbsolutePath}");
         }
         else if (assets.Length <= 0)
         {
-            //logger.LogError("Asset missing in folder: " + resourceAbsolutePath);
             asset = null;
             return false;
         }
@@ -56,13 +55,13 @@ internal class Asset
         var metadataPath = metadata[0];
         if (!File.Exists(metadataPath))
         {
-            logger.LogError("Unable to find the metadata inside path: " + resourceAbsolutePath);
+            logger.LogError($"Unable to find the metadata inside path: {resourceAbsolutePath}");
             asset = null;
             return false;
         }
         if (!File.Exists(assetPath))
         {
-            logger.LogError("Unable to find the asset inside path: " + resourceAbsolutePath);
+            logger.LogError($"Unable to find the asset inside path: {resourceAbsolutePath}");
             asset = null;
             return false;
         }
@@ -71,6 +70,4 @@ internal class Asset
         asset.AssetAbsolutePath = assetPath;
         return true;
     }
-
-    public override string ToString() => "Id: " + Id + ", Asset: " + AssetAbsolutePath + ", Metadata: " + Metadata.ToString();
 }

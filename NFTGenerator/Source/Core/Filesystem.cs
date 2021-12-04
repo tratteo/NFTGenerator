@@ -13,22 +13,20 @@ internal class Filesystem
 
     public List<Layer> Layers { get; private set; }
 
-    public string MediaExtension { get; private set; } = string.Empty;
-
     public Filesystem(Logger logger)
     {
         Layers = new List<Layer>();
         this.logger = logger;
     }
 
-    public bool Verify(bool verbose = true, bool cleanInvalid = false)
+    public bool Verify(bool verbose = true)
     {
         List<Action> warnings = new List<Action>();
         var amountToMint = Configurator.Options.Generation.SerieCount;
-        Load(verbose, cleanInvalid);
+        Load(verbose);
         if (verbose)
         {
-            logger.LogInfo("Verifying whether layers are fucked up or not...");
+            logger?.LogInfo("Verifying whether layers are fucked up or not...");
         }
         var fileExtension = string.Empty;
         foreach (Layer layer in Layers)
@@ -41,40 +39,39 @@ internal class Filesystem
 
                 if (info.Extension != fileExtension && fileExtension != string.Empty)
                 {
-                    logger.LogError("Assets are not of the same type at: " + a.AssetAbsolutePath);
+                    logger?.LogError("Assets are not of the same type at: " + a.AssetAbsolutePath);
                     return false;
                 }
                 fileExtension = info.Extension;
             }
-            MediaExtension = fileExtension;
             if (amount < amountToMint)
             {
-                logger.LogError("Wrong assets sum in layer: " + layer.Path);
+                logger?.LogError("Wrong assets sum in layer: " + layer.Path);
                 return false;
             }
             else if (amount > amountToMint)
             {
-                warnings.Add(() => logger.LogWarning("Assets sum in layer: " + layer.Path + " is greater than the AMOUNT_TO_MINT, adjust it if you want amounts in metadata to actually represents probabilities"));
+                warnings.Add(() => logger?.LogWarning("Assets sum in layer: " + layer.Path + " is greater than the SERIE_AMOUNT, adjust it if you want amounts in metadata to actually represent probabilities"));
             }
         }
         if (verbose)
         {
-            logger.LogInfo("Verifying some weird math...");
+            logger?.LogInfo("Verifying some weird math...");
         }
         var dispositions = 1;
         Layers.ForEach(l => dispositions *= l.Assets.Count);
         if (dispositions < amountToMint)
         {
-            logger.LogError("There are less mathematical available disposition than the amount to mint (" + amountToMint + ")");
+            logger?.LogError("There are less mathematical available disposition than the amount to mint (" + amountToMint + ")");
             return false;
         }
         if (amountToMint == 0)
         {
-            warnings.Add(() => logger.LogWarning("The amount to mint is set to 0 in the configuration file"));
+            warnings.Add(() => logger?.LogWarning("The amount to mint is set to 0 in the configuration file"));
         }
         if (verbose)
         {
-            logger.LogInfo("Verification process passed with " + warnings.Count + " warnings", ConsoleColor.Green);
+            logger?.LogInfo("Verification process passed with " + warnings.Count + " warnings", ConsoleColor.Green);
             foreach (Action w in warnings)
             {
                 w?.Invoke();
@@ -83,35 +80,25 @@ internal class Filesystem
         return true;
     }
 
-    private bool Layout()
+    private void Load(bool verbose = true)
     {
-        var created = false;
+        Layers.Clear();
         if (!Directory.Exists(Configurator.Options.FilesystemPath))
         {
             Directory.CreateDirectory(Configurator.Options.FilesystemPath);
-            logger.LogInfo("Created FS root directory: " + Configurator.Options.FilesystemPath);
-            created = true;
+            logger?.LogInfo("Created FS root directory: " + Configurator.Options.FilesystemPath);
         }
         if (!Directory.Exists(Configurator.Options.FilesystemPath + "\\layers"))
         {
             Directory.CreateDirectory(Configurator.Options.FilesystemPath + "\\layers");
-            logger.LogInfo("Created FS root directory: " + Configurator.Options.FilesystemPath + "\\layers");
-            created = true;
+            logger?.LogInfo("Created FS root directory: " + Configurator.Options.FilesystemPath + "\\layers");
         }
         if (!Directory.Exists(Configurator.Options.ResultsPath))
         {
             Directory.CreateDirectory(Configurator.Options.ResultsPath);
-            logger.LogInfo("Created FS root directory: " + Configurator.Options.ResultsPath);
-            created = true;
+            logger?.LogInfo("Created FS root directory: " + Configurator.Options.ResultsPath);
         }
-        return created;
-    }
-
-    private void Load(bool verbose = true, bool cleanInvalid = false)
-    {
-        Layers.Clear();
-        Layout();
-        if (verbose) logger.LogInfo("Loading layers");
+        if (verbose) logger?.LogInfo("Loading layers");
         var dirs = Directory.GetDirectories(Configurator.Options.FilesystemPath + "\\layers");
         for (var i = 0; i < dirs.Length; i++)
         {
@@ -121,23 +108,14 @@ internal class Filesystem
             for (var j = 0; j < assets.Length; j++)
             {
                 var assetPath = assets[j];
-                if (Asset.TryCreate(out Asset asset, assetPath, j, logger))
+                if (Asset.TryParse(out Asset asset, assetPath, j, logger))
                 {
                     layer.Assets.Add(asset);
-                }
-                else if (cleanInvalid)
-                {
-                    Directory.Delete(assetPath, true);
-                    currentAssets--;
                 }
             }
             if (currentAssets > 0)
             {
                 Layers.Add(layer);
-            }
-            else if (cleanInvalid)
-            {
-                Directory.Delete(dirs[i]);
             }
         }
     }

@@ -11,7 +11,7 @@ namespace NFTGenerator;
 
 internal static class CommandsDelegates
 {
-    public static void VerifyCMD(Filesystem filesystem, Generator generator, string path, bool clean, Logger logger)
+    public static void VerifyCMD(Filesystem filesystem, string path, Logger logger)
     {
         switch (path)
         {
@@ -53,7 +53,7 @@ internal static class CommandsDelegates
                         NFTMetadata nftData = Serializer.DeserializeJson<NFTMetadata>(string.Empty, data);
                         if (!nftData.Valid(logger))
                         {
-                            logger.LogError("Errors on metadata: " + data);
+                            logger.LogError($"Errors on metadata: {data}");
                             logger.LogInfo("\n");
                             valid = false;
                         }
@@ -66,12 +66,12 @@ internal static class CommandsDelegates
                 break;
 
             case "fs":
-                filesystem.Verify(true, clean);
+                filesystem.Verify(true);
                 break;
         }
     }
 
-    public static void OpenPathCMD(Filesystem filesystem, Generator generator, string path, Logger logger)
+    public static void OpenPathCMD(Filesystem filesystem, string path, Logger logger)
     {
         switch (path)
         {
@@ -104,7 +104,7 @@ internal static class CommandsDelegates
         }
     }
 
-    public static void CreateFilesystemSchemaCMD(Filesystem filesystem, Generator generator, string layers, string assets, Logger logger)
+    public static void CreateFilesystemSchemaCMD(Filesystem filesystem, string layers, string assets, Logger logger)
     {
         int layersNumber;
         int assetsNumber;
@@ -120,17 +120,17 @@ internal static class CommandsDelegates
         }
         for (var i = 0; i < layersNumber; i++)
         {
-            var layerName = "layer_" + i;
+            var layerName = $"layer_{i}";
             for (var j = 0; j < assetsNumber; j++)
             {
-                var assetName = Configurator.Options.FilesystemPath + "\\layers\\" + layerName + "\\asset_" + j;
-                Directory.CreateDirectory(assetName);
-                Serializer.SerializeJson(AssetMetadata.Blueprint(), string.Empty, assetName + "\\" + j.ToString() + ".json");
+                var assetFolder = $"asset_{j}";
+                Directory.CreateDirectory(assetFolder);
+                Serializer.SerializeJson(AssetMetadata.Blueprint(), $"{Configurator.Options.FilesystemPath}\\layers\\{layerName}\\{assetFolder}", $"{j}.json");
             }
         }
     }
 
-    public static void PurgePathCMD(Filesystem filesystem, Generator generator, string path, bool force, Logger logger)
+    public static void PurgePathCMD(Filesystem filesystem, string path, bool force, Logger logger)
     {
         string answer;
         switch (path)
@@ -175,13 +175,13 @@ internal static class CommandsDelegates
             amount++;
             file.Delete();
         }
-        logger?.LogInfo("Deleted " + amount + " files");
+        logger?.LogInfo($"Deleted {amount} files");
         amount = 0;
         foreach (DirectoryInfo dir in dInfo.EnumerateDirectories())
         {
             amount++;
             dir.Delete(true);
         }
-        logger?.LogInfo("Deleted " + amount + " directories");
+        logger?.LogInfo($"Deleted {amount} directories");
     }
 }

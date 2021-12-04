@@ -95,4 +95,21 @@ internal class NFTMetadata
             }
         }
     }
+
+    public NFTMetadata Clone()
+    {
+        return new NFTMetadata
+        {
+            Name = Name,
+            Symbol = Symbol,
+            Description = Description,
+            SellerFeeBasisPoints = SellerFeeBasisPoints,
+            Image = Image,
+            AnimationUrl = AnimationUrl,
+            ExternalUrl = ExternalUrl,
+            Attributes = Attributes,
+            Collection = Collection,
+            Properties = Properties
+        };
+    }
 }

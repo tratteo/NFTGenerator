@@ -1,46 +1,33 @@
 ﻿// Copyright Matteo Beltrame
 
 using GibNet.Logging;
-using System.IO;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 
 namespace NFTGenerator;
 
 internal static class Media
 {
-    public static void ComposeMedia(string first, string second, string res, Logger logger)
+    public static void ComposePNG(string res, Logger logger, params string[] pngs)
     {
-        System.Diagnostics.Process process = new System.Diagnostics.Process();
-        System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo
+        Bitmap[] bitmaps = new Bitmap[pngs.Length];
+        for (int i = 0; i < pngs.Length; i++)
         {
-            WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
-            FileName = "cmd.exe",
-            Arguments = GetMergeCommand(first, second, res, logger)
-        };
-        //Logger.LogInfo(startInfo.Arguments);
-        process.StartInfo = startInfo;
-        process.Start();
-        process.WaitForExit();
-    }
+            bitmaps[i] = new Bitmap(pngs[i]);
+        }
 
-    private static string GetMergeCommand(string first, string second, string res, Logger logger)
-    {
-        var firstExtension = new FileInfo(first).Extension;
-        var secondExtension = new FileInfo(second).Extension;
-        if (firstExtension != secondExtension)
+        var target = new Bitmap(bitmaps[0].Width, bitmaps[0].Height, PixelFormat.Format32bppArgb);
+        var composed = Graphics.FromImage(target);
+        composed.CompositingMode = CompositingMode.SourceOver;
+
+        for (int i = 0; i < pngs.Length; i++)
         {
-            logger.LogError("Unable to combine two different file types: " + firstExtension + " - " + secondExtension);
-            return string.Empty;
+            composed.DrawImage(bitmaps[i], 0, 0);
+            bitmaps[i].Dispose();
         }
-        else
-        {
-            //Logger.LogInfo(firstExtension);
-            return firstExtension switch
-            {
-                ".gif" => "/C magick convert " + first + " -coalesce null: " + second + " -gravity center -layers composite " + res,
-                ".png" => "/C magick convert " + first + " " + second + " -compose atop -gravity center -composite " + res,
-                ".jpeg" => "/C magick convert " + first + " " + second + " -compose atop -gravity center -composite " + res,
-                _ => string.Empty
-            };
-        }
+        target.Save(res, ImageFormat.Png);
+        target.Dispose();
+        composed.Dispose();
     }
 }

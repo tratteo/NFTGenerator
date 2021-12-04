@@ -15,7 +15,7 @@ internal static class Dependencies
     private enum ProgramVersion
     { x86, x64 }
 
-    private const string IMAGEMAGICK_URL = "https://download.imagemagick.org/ImageMagick/download/binaries/ImageMagick-7.1.0-8-Q16-HDRI-x64-dll.exe";
+    private const string IMAGEMAGICK_URL = "https://download.imagemagick.org/ImageMagick/download/binaries/ImageMagick-7.1.0-15-Q16-HDRI-x64-dll.exe";
     private static readonly string DEPENDENCIES_TEMP_LOCATION = "C:/Users/" + Environment.GetEnvironmentVariable("USERNAME") + "/";
 
     public static void Resolve(Logger logger)

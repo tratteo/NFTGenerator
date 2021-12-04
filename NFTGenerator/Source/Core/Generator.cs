@@ -4,6 +4,8 @@ using GibNet.Logging;
 using GibNet.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace NFTGenerator;
 
@@ -11,14 +13,15 @@ internal class Generator
 {
     private readonly Filesystem filesystem;
     private readonly Logger logger;
-
-    public List<int[]> GeneratedHashes { get; private set; }
+    private readonly NFTMetadata nftMetadataBlueprint;
+    private readonly List<int[]> generatedHashes;
 
     public Generator(Filesystem filesystem, Logger logger)
     {
         this.logger = logger;
-        GeneratedHashes = new List<int[]>();
+        generatedHashes = new List<int[]>();
         this.filesystem = filesystem;
+        nftMetadataBlueprint = NFTMetadata.Blueprint();
     }
 
     public void ResetGenerationParameters()
@@ -30,63 +33,83 @@ internal class Generator
                 asset.MintedAmount = 0;
             }
         }
-        GeneratedHashes.Clear();
+        generatedHashes.Clear();
     }
 
-    public void GenerateSingle(int index)
+    public void GenerateSingle(int index, IProgress<int> progress = null)
     {
-        logger.LogInfo("Generating NFT #" + index);
-
-        NFTMetadata meta = NFTMetadata.Blueprint();
+        NFTMetadata meta = nftMetadataBlueprint.Clone();
         var mintedHash = new int[filesystem.Layers.Count];
-        var resPath = Configurator.Options.ResultsPath + "\\" + index + filesystem.MediaExtension;
+        var resPath = $"{Configurator.Options.ResultsPath}\\{index}.png";
         List<Asset> toMerge = new List<Asset>();
         for (var i = 0; i < filesystem.Layers.Count; i++)
         {
             Asset pick = filesystem.Layers[i].GetRandom();
             mintedHash[i] = pick.Id;
+
             //We are in last layer and there is a duplicate
             if (!Configurator.Options.Generation.AllowDuplicates && i == filesystem.Layers.Count - 1 && !IsHashValid(mintedHash))
             {
                 pick = GetLastLayerValidAsset(mintedHash);
                 mintedHash[i] = pick.Id;
             }
-            pick.MintedAmount++;
+
+            lock (pick)
+            {
+                pick.MintedAmount++;
+            }
             toMerge.Add(pick);
         }
+
         //At this point i have all the assets to be merged
         if (toMerge.Count < 2)
         {
-            throw new Exception("Unable to merge less than 2 assets!");
+            logger.LogError("Unable to merge less than 2 assets!");
+            return;
         }
-        // Create the first gif
+
+        string[] assetsNames = (from asset in toMerge select asset.AssetAbsolutePath).ToArray();
+
+        Media.ComposePNG(resPath, logger, assetsNames);
+
+        float generationProbability = 1F;
+        generationProbability *= toMerge[0].Metadata.Amount / (float)Configurator.Options.Generation.SerieCount;
+        generationProbability *= toMerge[1].Metadata.Amount / (float)Configurator.Options.Generation.SerieCount;
         if (!Configurator.Options.Generation.AssetsOnly)
         {
             meta.AddAttributes(toMerge[0].Metadata.Attributes);
             meta.AddAttributes(toMerge[1].Metadata.Attributes);
         }
-        Media.ComposeMedia(toMerge[0].AssetAbsolutePath, toMerge[1].AssetAbsolutePath, resPath, logger);
-        //Logger.LogInfo(toMerge.Count.ToString());
+
         for (var i = 2; i < toMerge.Count; i++)
         {
             if (!Configurator.Options.Generation.AssetsOnly)
             {
                 meta.AddAttributes(toMerge[i].Metadata.Attributes);
             }
-            Media.ComposeMedia(resPath, toMerge[i].AssetAbsolutePath, resPath, logger);
+            generationProbability *= toMerge[i].Metadata.Amount / (float)Configurator.Options.Generation.SerieCount;
         }
+        StringBuilder stringBuilder = new StringBuilder();
+        foreach (int val in mintedHash)
+        {
+            stringBuilder.Append($"{val} ");
+        }
+        string report = stringBuilder.ToString();
+        Serializer.WriteAll($"{Configurator.Options.ResultsPath}\\rarities\\", $"{index}.rarity", $"Probability: {generationProbability}\nHash: {stringBuilder}");
+
         if (!Configurator.Options.Generation.AssetsOnly)
         {
-            Serializer.SerializeJson(meta, string.Empty, Configurator.Options.ResultsPath + "\\" + index + ".json");
+            Serializer.SerializeJson(meta, $"{Configurator.Options.ResultsPath}\\", $"{index}.json");
         }
-        GeneratedHashes.Add(mintedHash);
+        generatedHashes.Add(mintedHash);
+        progress?.Report(1);
     }
 
     private Asset GetLastLayerValidAsset(int[] hash)
     {
         if (!filesystem.Layers[^1].HasMintableAssets())
         {
-            throw new Exception("Ok this should never happen, the last layer has no mintable assets");
+            return null;
         }
         foreach (Asset asset in filesystem.Layers[^1].Assets)
         {
@@ -102,7 +125,7 @@ internal class Generator
 
     private bool IsHashValid(int[] current)
     {
-        return GeneratedHashes.FindAll((h) =>
+        return generatedHashes.FindAll((h) =>
         {
             for (var i = 0; i < current.Length; i++)
             {
