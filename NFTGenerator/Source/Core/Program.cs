@@ -51,10 +51,7 @@ void RegisterCommands(CommandLine cli, Filesystem filesystem)
                     cli.Logger.LogInfo("Generating NFTs...");
                     cli.Logger.LogInfo($"0 %", false);
                     watch.Restart();
-                    Parallel.ForEach(Enumerable.Range(0, amountToMint), new ParallelOptions() { MaxDegreeOfParallelism = 64 }, (i, token) =>
-                    {
-                        generator.GenerateSingle(i, generationProgressReporter);
-                    });
+                    Parallel.ForEach(Enumerable.Range(0, amountToMint), new ParallelOptions() { MaxDegreeOfParallelism = 64 }, (i, token) => generator.GenerateSingle(i, generationProgressReporter));
                     watch.Stop();
                     await Task.Delay(100);
                     ConsoleUtilities.ClearConsoleLine();
@@ -71,8 +68,8 @@ void RegisterCommands(CommandLine cli, Filesystem filesystem)
         .Description("create the blueprint of a filesystem")
         .ArgumentsHandler(ArgumentsHandler.Factory().Positional("layers number").Positional("assets number per layer"))
         .AddAsync(async (handler) => await Task.Run(() => CommandsDelegates.CreateFilesystemSchemaCMD(filesystem, handler.GetPositional(0), handler.GetPositional(1), cli.Logger))));
-
     cli.Register(Command.Factory("help")
+        .InhibitHelp()
         .Description("display the available commands")
         .ArgumentsHandler(ArgumentsHandler.Factory())
         .AddAsync(async (handler) => cli.Logger.LogInfo(cli.Print())));
