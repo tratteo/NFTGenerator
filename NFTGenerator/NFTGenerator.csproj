@@ -30,15 +30,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="5.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="GibNet">
-      <HintPath>..\..\..\GibNet\GibNet\bin\Release\net6.0\GibNet.dll</HintPath>
+      <HintPath>Deps\GibNet.dll</HintPath>
     </Reference>
   </ItemGroup>
 
