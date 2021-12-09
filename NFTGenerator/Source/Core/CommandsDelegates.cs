@@ -1,7 +1,6 @@
 ﻿// Copyright Matteo Beltrame
 
-using GibNet.Logging;
-using GibNet.Serialization;
+using HandierCli;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -50,12 +49,14 @@ internal static class CommandsDelegates
                     }
                     foreach (var data in metadata)
                     {
-                        NFTMetadata nftData = Serializer.DeserializeJson<NFTMetadata>(string.Empty, data);
-                        if (!nftData.Valid(logger))
+                        if (Serializer.DeserializeJson<NFTMetadata>(string.Empty, data, out var nftData))
                         {
-                            logger.LogError($"Errors on metadata: {data}");
-                            logger.LogInfo("\n");
-                            valid = false;
+                            if (!nftData.Valid(logger))
+                            {
+                                logger.LogError($"Errors on metadata: {data}");
+                                logger.LogInfo("\n");
+                                valid = false;
+                            }
                         }
                     }
                 }
@@ -125,7 +126,7 @@ internal static class CommandsDelegates
             {
                 var assetFolder = $"asset_{j}";
                 Directory.CreateDirectory(assetFolder);
-                Serializer.SerializeJson(AssetMetadata.Blueprint(), $"{Configurator.Options.FilesystemPath}\\layers\\{layerName}\\{assetFolder}", $"{j}.json");
+                Serializer.SerializeJson($"{Configurator.Options.FilesystemPath}\\layers\\{layerName}\\{assetFolder}", $"{j}.json", AssetMetadata.Blueprint());
             }
         }
     }

@@ -1,8 +1,6 @@
 ﻿// Copyright Matteo Beltrame
 
-using GibNet;
-using GibNet.Cli;
-using GibNet.Logging;
+using HandierCli;
 using NFTGenerator;
 using System;
 using System.Diagnostics;
@@ -44,7 +42,7 @@ void RegisterCommands(CommandLine cli, Filesystem filesystem)
                     Progress<int> generationProgressReporter = new Progress<int>((p) =>
                     {
                         currentCount++;
-                        ConsoleUtilities.ClearConsoleLine();
+                        ConsoleExtensions.ClearConsoleLine();
                         cli.Logger.LogInfo($"{currentCount / (float)amountToMint * 100F:0} %", false);
                     });
                     Stopwatch watch = Stopwatch.StartNew();
@@ -54,7 +52,7 @@ void RegisterCommands(CommandLine cli, Filesystem filesystem)
                     Parallel.ForEach(Enumerable.Range(0, amountToMint), new ParallelOptions() { MaxDegreeOfParallelism = 64 }, (i, token) => generator.GenerateSingle(i, generationProgressReporter));
                     watch.Stop();
                     await Task.Delay(100);
-                    ConsoleUtilities.ClearConsoleLine();
+                    ConsoleExtensions.ClearConsoleLine();
                     cli.Logger.LogInfo($"Completed in {watch.ElapsedMilliseconds / 1000F:0.000} s", ConsoleColor.Green);
                 }
             }

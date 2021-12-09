@@ -1,7 +1,6 @@
 ﻿// Copyright Matteo Beltrame
 
-using GibNet.Logging;
-using GibNet.Serialization;
+using HandierCli;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -99,7 +98,7 @@ internal class Generator
 
         if (!Configurator.Options.Generation.AssetsOnly)
         {
-            Serializer.SerializeJson(meta, $"{Configurator.Options.ResultsPath}\\", $"{index}.json");
+            Serializer.SerializeJson($"{Configurator.Options.ResultsPath}\\", $"{index}.json", meta);
         }
         generatedHashes.Add(mintedHash);
         progress?.Report(1);

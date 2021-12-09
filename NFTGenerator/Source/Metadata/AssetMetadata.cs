@@ -1,6 +1,5 @@
 ﻿// Copyright Matteo Beltrame
 
-using GibNet.Serialization;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
@@ -23,7 +22,7 @@ internal class AssetMetadata
     [JsonProperty("attributes")]
     public List<AttributeMetadata> Attributes { get; set; }
 
-    public static AssetMetadata Blueprint() => Serializer.DeserializeJson<AssetMetadata>(Paths.BLUEPRINT_PATH, BLUEPRINT);
+    public static AssetMetadata Blueprint() => Serializer.DeserializeJson<AssetMetadata>(Paths.BLUEPRINT_PATH, BLUEPRINT, out var metadata) ? metadata : null;
 
     public override string ToString()
     {

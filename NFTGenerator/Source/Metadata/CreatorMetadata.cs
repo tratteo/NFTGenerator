@@ -1,6 +1,6 @@
 ﻿// Copyright Matteo Beltrame
 
-using GibNet.Logging;
+using HandierCli;
 using Newtonsoft.Json;
 
 namespace NFTGenerator;

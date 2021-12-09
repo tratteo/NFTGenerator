@@ -1,7 +1,6 @@
 ﻿// Copyright Matteo Beltrame
 
-using GibNet.Logging;
-using GibNet.Serialization;
+using HandierCli;
 using System.IO;
 using System.Linq;
 
@@ -66,7 +65,10 @@ internal class Asset
             return false;
         }
 
-        asset.Metadata = Serializer.DeserializeJson<AssetMetadata>(string.Empty, metadataPath);
+        if (Serializer.DeserializeJson<AssetMetadata>(string.Empty, metadataPath, out var assetMetadata))
+        {
+            asset.Metadata = assetMetadata;
+        }
         asset.AssetAbsolutePath = assetPath;
         return true;
     }

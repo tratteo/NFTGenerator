@@ -1,7 +1,6 @@
 ﻿// Copyright Matteo Beltrame
 
-using GibNet.Logging;
-using GibNet.Serialization;
+using HandierCli;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -22,11 +21,14 @@ internal static class Configurator
         {
             logger.LogWarning("Options file not found, creating a new one in " + Paths.CONFIG_PATH + OPTIONS_NAME);
             Options = new Options();
-            Serializer.SerializeJson(Options, Paths.CONFIG_PATH, OPTIONS_NAME);
+            Serializer.SerializeJson(Paths.CONFIG_PATH, OPTIONS_NAME, Options);
         }
         else
         {
-            Options = Serializer.DeserializeJson<Options>(Paths.CONFIG_PATH, OPTIONS_NAME);
+            if (Serializer.DeserializeJson<Options>(Paths.CONFIG_PATH, OPTIONS_NAME, out var options))
+            {
+                Options = options;
+            }
         }
         logger.LogInfo("Loading configuration file and setting up config watcher...");
         CONFIGWATCHER = new FileSystemWatcher(AppDomain.CurrentDomain.BaseDirectory + Paths.CONFIG_PATH)
@@ -45,7 +47,10 @@ internal static class Configurator
             {
                 try
                 {
-                    Options = Serializer.DeserializeJson<Options>(Paths.CONFIG_PATH, OPTIONS_NAME);
+                    if (Serializer.DeserializeJson<Options>(Paths.CONFIG_PATH, OPTIONS_NAME, out var options))
+                    {
+                        Options = options;
+                    }
                     break;
                 }
                 catch (IOException) when (i <= tries)

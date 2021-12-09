@@ -1,7 +1,6 @@
 ﻿// Copyright Matteo Beltrame
 
-using GibNet.Logging;
-using GibNet.Serialization;
+using HandierCli;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
@@ -42,7 +41,7 @@ internal class NFTMetadata
     [JsonProperty("properties")]
     public PropertiesMetadata Properties { get; set; }
 
-    public static NFTMetadata Blueprint() => Serializer.DeserializeJson<NFTMetadata>(Paths.BLUEPRINT_PATH, BLUEPRINT);
+    public static NFTMetadata Blueprint() => Serializer.DeserializeJson<NFTMetadata>(Paths.BLUEPRINT_PATH, BLUEPRINT, out var metadata) ? metadata : null;
 
     public bool Valid(Logger logger)
     {
