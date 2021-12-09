@@ -9,6 +9,7 @@
     <Authors>Siamango</Authors>
     <Company>Siamango</Company>
     <Description>A simple CLI for generating NFT-like gifs</Description>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
