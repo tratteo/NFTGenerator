@@ -3,6 +3,7 @@
 using HandierCli;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 
@@ -66,10 +67,10 @@ internal class Generator
             logger.LogError("Unable to merge less than 2 assets!");
             return;
         }
-
-        string[] assetsNames = (from asset in toMerge select asset.AssetAbsolutePath).ToArray();
-
-        Media.ComposePNG(resPath, logger, assetsNames);
+        List<IMediaProvider> assets = CheckIncompatibles(toMerge);
+        
+        Bitmap[] bitmaps = (from asset in assets select asset.ProvideMedia()).ToArray();
+        Media.ComposePNG(resPath, logger, bitmaps);
 
         float generationProbability = 1F;
         generationProbability *= toMerge[0].Metadata.Amount / (float)Configurator.Options.Generation.SerieCount;
@@ -122,6 +123,44 @@ internal class Generator
         return null;
     }
 
+    private List<IMediaProvider> CheckIncompatibles(List<Asset> assets)
+    {
+        var fallbacks = filesystem.AssetFallbacks;
+        var iters = fallbacks[0].Metadata.Incompatibles.Length;
+        List<int> incompatibles = new List<int>();
+        for (int i = 0; i<fallbacks.Count; i++)
+        {
+            var fallback = fallbacks[i].Metadata.Incompatibles;// int array
+            var numberIncompatible = fallbacks[i].Metadata.IncompatiblesCount;// incompatibles sum
+            int incompatibleCount = 0;// incompatibles current check
+            incompatibles.Clear();
+            for (int j = 0; j < iters; j++)
+            {
+                if(fallback[j] != -1)
+                {
+                    if(fallback[j] == assets[j].Id)
+                    {
+                        incompatibleCount++;
+                        incompatibles.Add(j);
+                    }
+                }
+            }
+            if(numberIncompatible == incompatibleCount)
+            {
+                List<IMediaProvider> res = new List<IMediaProvider>();  
+                for(int k =0; k < iters; k++)
+                {
+                    if(!incompatibles.Contains(k))
+                    {
+                        res.Add(assets[k]);
+                    }    
+                }
+                res.Insert(incompatibles[0], fallbacks[i]);
+                return res;
+            }
+        }
+        return assets.ConvertAll(a => a as IMediaProvider);
+    }
     private bool IsHashValid(int[] current)
     {
         return generatedHashes.FindAll((h) =>

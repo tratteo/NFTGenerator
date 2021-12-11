@@ -1,0 +1,9 @@
+{
+    "attributes": [
+        {
+            "trait": "name1",
+            "value": "value1"
+        }
+    ],
+    "incompatibles": []
+}

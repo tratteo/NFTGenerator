@@ -1,34 +1,28 @@
 ﻿// Copyright Matteo Beltrame
 
 using HandierCli;
+using NFTGenerator.Source.Metadata;
+using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace NFTGenerator;
+namespace NFTGenerator.Source.Objects;
 
-internal class Asset : IMediaProvider
+internal class AssetFallback : IMediaProvider
 {
-    public int Id { get; private set; }
-
-    public AssetMetadata Metadata { get; private set; }
-
     public Bitmap Img { get; private set; }
+    public AssetFallbackMetadata Metadata { get; private set; }
+    public string AssetFallbackAbsolutePath { get; private set; }
 
-    public string AssetAbsolutePath { get; private set; }
-
-    public int MintedAmount { get; set; } = 0;
-
-    private Asset()
+    public Bitmap ProvideMedia() => Img;
+    public static bool TryParse(out AssetFallback assetFallback, string resourceAbsolutePath, int id, Logger logger)
     {
-    }
-
-    public static bool TryParse(out Asset asset, string resourceAbsolutePath, int id, Logger logger)
-    {
-        asset = new Asset
-        {
-            Id = id
-        };
+        assetFallback = new AssetFallback();
+        
         var metadata = Directory.GetFiles(resourceAbsolutePath, "*.json");
         if (metadata.Length > 1)
         {
@@ -39,7 +33,7 @@ internal class Asset : IMediaProvider
             if (!Configurator.Options.Generation.AssetsOnly)
             {
                 //logger.LogError("Metadata missing in folder: " + resourceAbsolutePath);
-                asset = null;
+                assetFallback = null;
                 return false;
             }
         }
@@ -50,7 +44,7 @@ internal class Asset : IMediaProvider
         }
         else if (assets.Length <= 0)
         {
-            asset = null;
+            assetFallback = null;
             return false;
         }
         var assetPath = assets[0];
@@ -58,24 +52,23 @@ internal class Asset : IMediaProvider
         if (!File.Exists(metadataPath))
         {
             logger.LogError($"Unable to find the metadata inside path: {resourceAbsolutePath}");
-            asset = null;
+            assetFallback = null;
             return false;
         }
         if (!File.Exists(assetPath))
         {
             logger.LogError($"Unable to find the asset inside path: {resourceAbsolutePath}");
-            asset = null;
+            assetFallback = null;
             return false;
         }
 
-        if (Serializer.DeserializeJson<AssetMetadata>(string.Empty, metadataPath, out var assetMetadata))
+        if (Serializer.DeserializeJson<AssetFallbackMetadata>(string.Empty, metadataPath, out var assetMetadata))
         {
-            asset.Metadata = assetMetadata;
+            assetFallback.Metadata = assetMetadata;
         }
-        asset.AssetAbsolutePath = assetPath;
-        asset.Img = new Bitmap(assetPath);
+        assetFallback.AssetFallbackAbsolutePath = assetPath;
+        assetFallback.Img = new Bitmap(assetPath);
         return true;
     }
 
-    public Bitmap ProvideMedia() => Img;
 }

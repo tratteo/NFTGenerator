@@ -72,9 +72,9 @@ internal static class CommandsDelegates
         }
     }
 
-    public static void OpenPathCMD(Filesystem filesystem, string path, Logger logger)
+    public static void OpenPathCMD(Filesystem filesystem, ArgumentsHandler handler, Logger logger)
     {
-        switch (path)
+        switch (handler.GetPositional(0))
         {
             case "fs":
                 Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath);
@@ -85,7 +85,19 @@ internal static class CommandsDelegates
                 break;
 
             case "layers":
-                Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\layers");
+                if (handler.GetKeyed("-l", out string layerNumber))
+                {
+                    if (int.TryParse(layerNumber, out int layerId) && layerId>= 0 && layerId < filesystem.Layers.Count)
+                    {
+                        Layer layer = filesystem.Layers[layerId];
+                        logger?.LogInfo(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\" + layer.Name);
+                        Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\layers\\" + layer.Name);
+                    }
+                }
+                else
+                {
+                    Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\layers");
+                }
                 break;
 
             case "config":
@@ -125,8 +137,8 @@ internal static class CommandsDelegates
             for (var j = 0; j < assetsNumber; j++)
             {
                 var assetFolder = $"asset_{j}";
-                Directory.CreateDirectory(assetFolder);
-                Serializer.SerializeJson($"{Configurator.Options.FilesystemPath}\\layers\\{layerName}\\{assetFolder}", $"{j}.json", AssetMetadata.Blueprint());
+                //Directory.CreateDirectory(assetFolder);
+                Serializer.SerializeJson($"{Configurator.Options.FilesystemPath}\\layers\\{layerName}\\{assetFolder}\\", "metadata.json", AssetMetadata.Blueprint());
             }
         }
     }

@@ -11,15 +11,28 @@ internal class Layer
 
     public List<Asset> Assets { get; private set; }
 
-    public string Path { get; init; }
+    public string Path { get; private set; }
+
+    public string Name { get; private set; }
 
     public Layer(string path)
     {
         Assets = new List<Asset>();
         random = new Random();
         Path = path;
+        Name = SplitPath(path).Item2;
     }
-
+    private (string, string) SplitPath(string path)
+    {
+        var index = path.LastIndexOf("/");
+        if (index == -1)
+        {
+            index = path.LastIndexOf("\\");
+        }
+        var folder = index < 0 ? string.Empty : path[..(index + 1)];
+        var name = path.Substring(index + 1, path.Length - index - 1);
+        return (folder, name);
+    }
     public Asset GetRandom()
     {
         List<Asset> match = Assets.FindAll((a) => a.MintedAmount < a.Metadata.Amount);
