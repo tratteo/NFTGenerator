@@ -15,9 +15,9 @@ void RegisterCommands(CommandLine cli, Filesystem filesystem)
         .AddAsync(async (handler) => await Task.Run(() => CommandsDelegates.PurgePathCMD(filesystem, handler.GetPositional(0), handler.HasFlag("/f"), cli.Logger)));
 
     cli.Register(Command.Factory("open")
-        .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file path"))
+        .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file path").Keyed("-l", "layer number"))
         .Description("opens a path in the explorer")
-        .AddAsync(async (handler) => await Task.Run(() => CommandsDelegates.OpenPathCMD(filesystem, handler.GetPositional(0), cli.Logger))))
+        .AddAsync(async (handler) => await Task.Run(() => CommandsDelegates.OpenPathCMD(filesystem, handler, cli.Logger))))
     .Register(Command.Factory("generate")
         .Description("start the generation process")
         .ArgumentsHandler(ArgumentsHandler.Factory())
@@ -57,6 +57,7 @@ void RegisterCommands(CommandLine cli, Filesystem filesystem)
                 }
             }
         }))
+
     .Register(Command.Factory("verify")
         .Description("verify a certain path")
         .ArgumentsHandler(ArgumentsHandler.Factory().Positional("path to verify"))
@@ -65,7 +66,10 @@ void RegisterCommands(CommandLine cli, Filesystem filesystem)
     .Register(Command.Factory("create-fs")
         .Description("create the blueprint of a filesystem")
         .ArgumentsHandler(ArgumentsHandler.Factory().Positional("layers number").Positional("assets number per layer"))
-        .AddAsync(async (handler) => await Task.Run(() => CommandsDelegates.CreateFilesystemSchemaCMD(filesystem, handler.GetPositional(0), handler.GetPositional(1), cli.Logger))));
+        .AddAsync(async (handler) => await Task.Run(() => CommandsDelegates.CreateFilesystemSchemaCMD(filesystem, handler.GetPositional(0), handler.GetPositional(1), cli.Logger))))
+    .Register(Command.Factory("create-fb").Description("create the blueprint of the fallbacks filesystem")
+    .ArgumentsHandler(ArgumentsHandler.Factory().Positional("fallbacks number"))
+    .AddAsync(async (handler) => await Task.Run(() => CommandsDelegates.CreateFilesystemSchemaCMD(filesystem, handler.GetPositional(0), cli.Logger))));
     cli.Register(Command.Factory("help")
         .InhibitHelp()
         .Description("display the available commands")
