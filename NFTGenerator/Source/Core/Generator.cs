@@ -68,7 +68,7 @@ internal class Generator
             return;
         }
         List<IMediaProvider> assets = CheckIncompatibles(toMerge);
-        
+
         Bitmap[] bitmaps = (from asset in assets select asset.ProvideMedia()).ToArray();
         Media.ComposePNG(resPath, logger, bitmaps);
 
@@ -128,7 +128,7 @@ internal class Generator
         var fallbacks = filesystem.AssetFallbacks;
         var iters = assets.Count;
         List<int> incompatibles = new List<int>();// used to keep track of found incompatibles
-        for (int i = 0; i<fallbacks.Count; i++)
+        for (int i = 0; i < fallbacks.Count; i++)
         {
             var fallback = fallbacks[i].Metadata.Incompatibles;// int array
             var numberIncompatible = fallbacks[i].Metadata.IncompatiblesCount;// incompatibles sum
@@ -136,24 +136,24 @@ internal class Generator
             incompatibles.Clear();
             for (int j = 0; j < iters; j++)
             {
-                if(fallback[j] != -1)
+                if (fallback[j] != -1)
                 {
-                    if(fallback[j] == assets[j].Id)
+                    if (fallback[j] == assets[j].Id)
                     {
                         incompatibleCount++;
                         incompatibles.Add(j);
                     }
                 }
             }
-            if(numberIncompatible == incompatibleCount)
+            if (numberIncompatible == incompatibleCount)
             {
-                List<IMediaProvider> res = new List<IMediaProvider>();  
-                for(int k =0; k < iters; k++)
+                List<IMediaProvider> res = new List<IMediaProvider>();
+                for (int k = 0; k < iters; k++)
                 {
-                    if(!incompatibles.Contains(k))
+                    if (!incompatibles.Contains(k))
                     {
                         res.Add(assets[k]);
-                    }    
+                    }
                 }
                 res.Insert(incompatibles[0], fallbacks[i]);
                 return res;
@@ -161,6 +161,7 @@ internal class Generator
         }
         return assets.ConvertAll(a => a as IMediaProvider);
     }
+
     private bool IsHashValid(int[] current)
     {
         return generatedHashes.FindAll((h) =>

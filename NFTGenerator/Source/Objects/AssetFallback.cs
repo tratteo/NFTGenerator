@@ -2,23 +2,21 @@
 
 using HandierCli;
 using NFTGenerator.Source.Metadata;
-using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NFTGenerator.Source.Objects;
 
 internal class AssetFallback : IMediaProvider
 {
     public Bitmap Img { get; private set; }
+
     public AssetFallbackMetadata Metadata { get; private set; }
+
     public string AssetFallbackAbsolutePath { get; private set; }
+
     public int Id { get; private set; }
-    public Bitmap ProvideMedia() => Img;
+
     public static bool TryParse(out AssetFallback assetFallback, string resourceAbsolutePath, int id, Logger logger)
     {
         assetFallback = new AssetFallback();
@@ -72,4 +70,5 @@ internal class AssetFallback : IMediaProvider
         return true;
     }
 
+    public Bitmap ProvideMedia() => Img;
 }

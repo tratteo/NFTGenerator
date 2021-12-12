@@ -10,7 +10,6 @@ internal static class Media
 {
     public static void ComposePNG(string res, Logger logger, params Bitmap[] bitmaps)
     {
-
         var width = bitmaps[0].Width;
         var height = bitmaps[0].Height;
         var target = new Bitmap(width, height);

@@ -10,8 +10,6 @@ internal class AssetMetadata
 {
     public const string BLUEPRINT = "asset_metadata.json";
 
-    
-
     [JsonProperty("amount")]
     public int Amount { get; set; }
 

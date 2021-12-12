@@ -2,7 +2,6 @@
 
 using HandierCli;
 using NFTGenerator.Source.Metadata;
-using NFTGenerator.Source.Objects;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -89,7 +88,7 @@ internal static class CommandsDelegates
             case "layers":
                 if (handler.GetKeyed("-n", out string layerNumber))
                 {
-                    if (int.TryParse(layerNumber, out int layerId) && layerId>= 0 && layerId < filesystem.Layers.Count)
+                    if (int.TryParse(layerNumber, out int layerId) && layerId >= 0 && layerId < filesystem.Layers.Count)
                     {
                         Layer layer = filesystem.Layers[layerId];
                         logger?.LogInfo(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\" + layer.Name);
@@ -114,7 +113,7 @@ internal static class CommandsDelegates
                 {
                     if (int.TryParse(fallbackNumber, out int fallbackId) && fallbackId >= 0 && fallbackId < filesystem.AssetFallbacks.Count)
                     {
-                        logger?.LogInfo(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + $"\\fallback_{fallbackId}"  );
+                        logger?.LogInfo(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + $"\\fallback_{fallbackId}");
                         Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\layers_fallback\\" + $"fallback_{fallbackId}");
                     }
                 }
@@ -133,6 +132,7 @@ internal static class CommandsDelegates
                 break;
         }
     }
+
     //overloaded method needed to create the fallback folder given the number of the eventual fallbacks
     public static void CreateFilesystemSchemaCMD(Filesystem filesystem, string fallbacks, Logger logger)
     {
@@ -141,12 +141,12 @@ internal static class CommandsDelegates
         {
             fallbackNumber = int.Parse(fallbacks);
         }
-        catch(Exception)
+        catch (Exception)
         {
             logger.LogError("Arguments must be integers");
             return;
         }
-        for(var i = 0; i < fallbackNumber; i++)
+        for (var i = 0; i < fallbackNumber; i++)
         {
             var fallbackName = $"fallback_{i}";
             Directory.CreateDirectory(fallbackName);
@@ -240,7 +240,6 @@ internal static class CommandsDelegates
                     }
                 }
                 break;
-
         }
     }
 

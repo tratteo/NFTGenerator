@@ -15,6 +15,7 @@ internal class Filesystem
     public List<Layer> Layers { get; private set; }
 
     public List<AssetFallback> AssetFallbacks { get; private set; }
+
     public Filesystem(Logger logger)
     {
         Layers = new List<Layer>();
@@ -73,10 +74,9 @@ internal class Filesystem
             warnings.Add(() => logger?.LogWarning("The amount to mint is set to 0 in the configuration file"));
         }
         bool incompatiblesError = false;
-        foreach(AssetFallback fallback in AssetFallbacks )//TODO finish verifying fallbacks
+        foreach (AssetFallback fallback in AssetFallbacks)//TODO finish verifying fallbacks
         {
-            
-            if(fallback.Metadata.Incompatibles.Length != Layers.Count)
+            if (fallback.Metadata.Incompatibles.Length != Layers.Count)
             {
                 logger?.LogError($"Incorrect incompatibles count in fallback: {fallback.Id} ");
                 incompatiblesError = true;
@@ -113,7 +113,7 @@ internal class Filesystem
             Directory.CreateDirectory(Configurator.Options.ResultsPath);
             logger?.LogInfo("Created FS root directory: " + Configurator.Options.ResultsPath);
         }
-        
+
         if (verbose) logger?.LogInfo("Loading layers");
         var dirs = Directory.GetDirectories(Configurator.Options.FilesystemPath + "\\layers");
         for (var i = 0; i < dirs.Length; i++)
@@ -134,23 +134,19 @@ internal class Filesystem
                 Layers.Add(layer);
             }
         }
-        if(Directory.Exists(Configurator.Options.FilesystemPath + "\\layers_fallback"))
+        if (Directory.Exists(Configurator.Options.FilesystemPath + "\\layers_fallback"))
         {
             var fallbackDirs = Directory.GetDirectories(Configurator.Options.FilesystemPath + "\\layers_fallback");
             if (verbose)
             { logger?.LogInfo("Loading asset fallbacks"); }
             for (var i = 0; i < fallbackDirs.Length; i++)
             {
-
-                
-                if(AssetFallback.TryParse(out AssetFallback fallback, fallbackDirs[i],i,logger))
+                if (AssetFallback.TryParse(out AssetFallback fallback, fallbackDirs[i], i, logger))
                 {
                     AssetFallbacks.Add(fallback);
                 }
-                
             }
             logger?.LogInfo("fallbacks count: " + AssetFallbacks.Count);
-            
         }
     }
 }
