@@ -1,6 +1,8 @@
 ﻿// Copyright Matteo Beltrame
 
 using HandierCli;
+using NFTGenerator.Source.Metadata;
+using NFTGenerator.Source.Objects;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -85,7 +87,7 @@ internal static class CommandsDelegates
                 break;
 
             case "layers":
-                if (handler.GetKeyed("-l", out string layerNumber))
+                if (handler.GetKeyed("-n", out string layerNumber))
                 {
                     if (int.TryParse(layerNumber, out int layerId) && layerId>= 0 && layerId < filesystem.Layers.Count)
                     {
@@ -107,6 +109,21 @@ internal static class CommandsDelegates
                 }
                 break;
 
+            case "fallbacks":
+                if (handler.GetKeyed("-n", out string fallbackNumber))
+                {
+                    if (int.TryParse(fallbackNumber, out int fallbackId) && fallbackId >= 0 && fallbackId < filesystem.AssetFallbacks.Count)
+                    {
+                        logger?.LogInfo(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + $"\\fallback_{fallbackId}"  );
+                        Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\layers_fallback\\" + $"fallback_{fallbackId}");
+                    }
+                }
+                else
+                {
+                    Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\layers_fallback");
+                }
+                break;
+
             case "root":
                 Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory);
                 break;
@@ -114,6 +131,27 @@ internal static class CommandsDelegates
             default:
                 logger.LogWarning("Unable to find path");
                 break;
+        }
+    }
+    //overloaded method needed to create the fallback folder given the number of the eventual fallbacks
+    public static void CreateFilesystemSchemaCMD(Filesystem filesystem, string fallbacks, Logger logger)
+    {
+        int fallbackNumber;
+        try
+        {
+            fallbackNumber = int.Parse(fallbacks);
+        }
+        catch(Exception)
+        {
+            logger.LogError("Arguments must be integers");
+            return;
+        }
+        for(var i = 0; i < fallbackNumber; i++)
+        {
+            var fallbackName = $"fallback_{i}";
+            Directory.CreateDirectory(fallbackName);
+            Serializer.SerializeJson($"{Configurator.Options.FilesystemPath}\\layers_fallback\\{fallbackName}\\",
+                "fallback_metadata.json", AssetFallbackMetadata.Blueprint());
         }
     }
 
@@ -138,7 +176,8 @@ internal static class CommandsDelegates
             {
                 var assetFolder = $"asset_{j}";
                 //Directory.CreateDirectory(assetFolder);
-                Serializer.SerializeJson($"{Configurator.Options.FilesystemPath}\\layers\\{layerName}\\{assetFolder}\\", "metadata.json", AssetMetadata.Blueprint());
+                Serializer.SerializeJson($"{Configurator.Options.FilesystemPath}\\layers\\{layerName}\\{assetFolder}\\",
+                    "metadata.json", AssetMetadata.Blueprint());
             }
         }
     }
@@ -167,15 +206,41 @@ internal static class CommandsDelegates
                 break;
 
             case "layers":
-
-                logger.LogInfo("Are you sure you want to purge layers? (Y/N)", ConsoleColor.DarkGreen);
-                answer = Console.ReadLine();
-                if (answer.ToLower().Equals("y"))
+                if (force)
                 {
                     PurgeRecursive(Configurator.Options.FilesystemPath + "\\layers", logger);
                     logger.LogInfo("Purged layers");
                 }
+                else
+                {
+                    logger.LogInfo("Are you sure you want to purge layers? (Y/N)", ConsoleColor.DarkGreen);
+                    answer = Console.ReadLine();
+                    if (answer.ToLower().Equals("y"))
+                    {
+                        PurgeRecursive(Configurator.Options.FilesystemPath + "\\layers", logger);
+                        logger.LogInfo("Purged layers");
+                    }
+                }
                 break;
+
+            case "fallbacks":
+                if (force)
+                {
+                    PurgeRecursive(Configurator.Options.FilesystemPath + "\\layers_fallback", logger);
+                    logger.LogInfo("Purged fallbacks");
+                }
+                else
+                {
+                    logger.LogInfo("Are you sure you want to purge fallbacks? (Y/N)", ConsoleColor.DarkGreen);
+                    answer = Console.ReadLine();
+                    if (answer.ToLower().Equals("y"))
+                    {
+                        PurgeRecursive(Configurator.Options.FilesystemPath + "\\layers_fallback", logger);
+                        logger.LogInfo("Purged fallbacks");
+                    }
+                }
+                break;
+
         }
     }
 

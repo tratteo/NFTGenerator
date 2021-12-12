@@ -72,6 +72,17 @@ internal class Filesystem
         {
             warnings.Add(() => logger?.LogWarning("The amount to mint is set to 0 in the configuration file"));
         }
+        bool incompatiblesError = false;
+        foreach(AssetFallback fallback in AssetFallbacks )//TODO finish verifying fallbacks
+        {
+            
+            if(fallback.Metadata.Incompatibles.Length != Layers.Count)
+            {
+                logger?.LogError($"Incorrect incompatibles count in fallback: {fallback.Id} ");
+                incompatiblesError = true;
+            }
+        }
+        if (incompatiblesError) return false;
         if (verbose)
         {
             logger?.LogInfo("Verification process passed with " + warnings.Count + " warnings", ConsoleColor.Green);
@@ -126,7 +137,8 @@ internal class Filesystem
         if(Directory.Exists(Configurator.Options.FilesystemPath + "\\layers_fallback"))
         {
             var fallbackDirs = Directory.GetDirectories(Configurator.Options.FilesystemPath + "\\layers_fallback");
-            logger?.LogInfo("Loading asset fallbacks");
+            if (verbose)
+            { logger?.LogInfo("Loading asset fallbacks"); }
             for (var i = 0; i < fallbackDirs.Length; i++)
             {
 

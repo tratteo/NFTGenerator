@@ -17,12 +17,12 @@ internal class AssetFallback : IMediaProvider
     public Bitmap Img { get; private set; }
     public AssetFallbackMetadata Metadata { get; private set; }
     public string AssetFallbackAbsolutePath { get; private set; }
-
+    public int Id { get; private set; }
     public Bitmap ProvideMedia() => Img;
     public static bool TryParse(out AssetFallback assetFallback, string resourceAbsolutePath, int id, Logger logger)
     {
         assetFallback = new AssetFallback();
-        
+        assetFallback.Id = id;
         var metadata = Directory.GetFiles(resourceAbsolutePath, "*.json");
         if (metadata.Length > 1)
         {
@@ -45,6 +45,7 @@ internal class AssetFallback : IMediaProvider
         else if (assets.Length <= 0)
         {
             assetFallback = null;
+            logger.LogWarning($"Png missing in fallback : {id}");
             return false;
         }
         var assetPath = assets[0];

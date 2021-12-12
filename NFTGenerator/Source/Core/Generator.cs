@@ -126,8 +126,8 @@ internal class Generator
     private List<IMediaProvider> CheckIncompatibles(List<Asset> assets)
     {
         var fallbacks = filesystem.AssetFallbacks;
-        var iters = fallbacks[0].Metadata.Incompatibles.Length;
-        List<int> incompatibles = new List<int>();
+        var iters = assets.Count;
+        List<int> incompatibles = new List<int>();// used to keep track of found incompatibles
         for (int i = 0; i<fallbacks.Count; i++)
         {
             var fallback = fallbacks[i].Metadata.Incompatibles;// int array
