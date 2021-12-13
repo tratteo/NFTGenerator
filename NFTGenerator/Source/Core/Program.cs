@@ -15,7 +15,7 @@ void RegisterCommands(CommandLine cli, Filesystem filesystem)
         .AddAsync(async (handler) => await Task.Run(() => CommandsDelegates.PurgePathCMD(filesystem, handler.GetPositional(0), handler.HasFlag("/f"), cli.Logger)));
 
     cli.Register(Command.Factory("open")
-        .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file path").Keyed("-l", "layer number"))
+        .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file path").Keyed("-n", "id"))
         .Description("opens a path in the explorer")
         .AddAsync(async (handler) => await Task.Run(() => CommandsDelegates.OpenPathCMD(filesystem, handler, cli.Logger))))
     .Register(Command.Factory("generate")
