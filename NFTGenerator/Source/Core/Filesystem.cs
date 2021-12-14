@@ -127,11 +127,13 @@ internal class Filesystem
                 if (Asset.TryParse(out Asset asset, assetPath, j, logger))
                 {
                     layer.Assets.Add(asset);
+                    //logger.LogInfo($"Asset {j}: {asset.Id}, {assetPath}");
                 }
             }
             if (currentAssets > 0)
             {
                 Layers.Add(layer);
+                //logger.LogInfo($"Layer {i}: {layer.Name}");
             }
         }
         if (Directory.Exists(Configurator.Options.FilesystemPath + "\\layers_fallback"))
@@ -146,7 +148,7 @@ internal class Filesystem
                     AssetFallbacks.Add(fallback);
                 }
             }
-            logger?.LogInfo("fallbacks count: " + AssetFallbacks.Count);
+            logger?.LogInfo($"Found {AssetFallbacks.Count} fallbacks");
         }
     }
 }

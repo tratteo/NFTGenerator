@@ -127,39 +127,48 @@ internal class Generator
     {
         var fallbacks = filesystem.AssetFallbacks;
         var iters = assets.Count;
-        List<int> incompatibles = new List<int>();// used to keep track of found incompatibles
+        List<Asset> incompatibles = new List<Asset>();// used to keep track of found incompatibles
+        // Cycle fallbacks
         for (int i = 0; i < fallbacks.Count; i++)
         {
-            var fallback = fallbacks[i].Metadata.Incompatibles;// int array
-            var numberIncompatible = fallbacks[i].Metadata.IncompatiblesCount;// incompatibles sum
-            int incompatibleCount = 0;// incompatibles current check
+            var fallbacksArr = fallbacks[i].Metadata.Incompatibles;// int array
+            //var numberIncompatible = fallbacks[i].Metadata.IncompatiblesCount;// incompatibles sum
             incompatibles.Clear();
-            for (int j = 0; j < iters; j++)
+            if (ArrayEquality(fallbacksArr, assets, out int firstHit))
             {
-                if (fallback[j] != -1)
-                {
-                    if (fallback[j] == assets[j].Id)
-                    {
-                        incompatibleCount++;
-                        incompatibles.Add(j);
-                    }
-                }
-            }
-            if (numberIncompatible == incompatibleCount)
-            {
+                logger.LogInfo("Found incompatible");
                 List<IMediaProvider> res = new List<IMediaProvider>();
-                for (int k = 0; k < iters; k++)
+
+                for (var v = 0; v < fallbacksArr.Length; v++)
                 {
-                    if (!incompatibles.Contains(k))
+                    if (fallbacksArr[v] == -1)
                     {
-                        res.Add(assets[k]);
+                        res.Add(assets[v]);
                     }
                 }
-                res.Insert(incompatibles[0], fallbacks[i]);
+                res.Insert(firstHit, fallbacks[i]);
                 return res;
             }
         }
         return assets.ConvertAll(a => a as IMediaProvider);
+    }
+
+    private bool ArrayEquality(int[] arr, List<Asset> assets, out int firstIndex)
+    {
+        firstIndex = -1;
+        if (arr.Length != assets.Count) return false;
+        for (int i = 0; i < arr.Length; i++)
+        {
+            if (arr[i] is not (-1) and not (-2))
+            {
+                if (!arr[i].Equals(assets[i].Id))
+                {
+                    return false;
+                }
+                firstIndex = firstIndex == -1 ? i : firstIndex;
+            }
+        }
+        return true;
     }
 
     private bool IsHashValid(int[] current)

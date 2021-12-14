@@ -22,7 +22,7 @@ public class Serializer
 
     public static void SerializeJson<T>(string path, string name, T metadata, bool createPath = true)
     {
-        if (createPath && !path.Equals(string.Empty))
+        if (!Directory.Exists(path) && createPath && !path.Equals(string.Empty))
         {
             Directory.CreateDirectory(path);
         }

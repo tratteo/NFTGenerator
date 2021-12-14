@@ -149,7 +149,6 @@ internal static class CommandsDelegates
         for (var i = 0; i < fallbackNumber; i++)
         {
             var fallbackName = $"fallback_{i}";
-            Directory.CreateDirectory(fallbackName);
             Serializer.SerializeJson($"{Configurator.Options.FilesystemPath}\\layers_fallback\\{fallbackName}\\",
                 "fallback_metadata.json", AssetFallbackMetadata.Blueprint());
         }
