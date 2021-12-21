@@ -1,9 +1,18 @@
 ﻿// Copyright Matteo Beltrame
 
+using System;
+
 namespace NFTGenerator;
 
-public static class Paths
+internal static class Paths
 {
-    public const string BLUEPRINT_PATH = "Blueprint\\";
-    public const string CONFIG_PATH = "config\\";
+    public static readonly string ROOT = $"{AppDomain.CurrentDomain.BaseDirectory}";
+    public static readonly string FILESYSTEM = $"{ROOT}filesystem\\";
+
+    public static readonly string RESULTS = $"{ROOT}results\\";
+
+    public static readonly string TEMPLATES = $"{ROOT}templates\\";
+    public static readonly string CONFIG = $"{ROOT}config\\";
+    public static readonly string FALLBACKS = $"{FILESYSTEM}layers_fallback\\";
+    public static readonly string LAYERS = $"{FILESYSTEM}layers\\";
 }

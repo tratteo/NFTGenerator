@@ -1,10 +1,12 @@
 ﻿// Copyright Matteo Beltrame
 
 using HandierCli;
-using NFTGenerator.Source.Objects;
+using NFTGenerator.Metadata;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace NFTGenerator;
 
@@ -14,24 +16,66 @@ internal class Filesystem
 
     public List<Layer> Layers { get; private set; }
 
-    public List<AssetFallback> AssetFallbacks { get; private set; }
+    public FallbackMetadata FallbackMetadata { get; private set; }
 
     public Filesystem(Logger logger)
     {
         Layers = new List<Layer>();
         this.logger = logger;
-        AssetFallbacks = new List<AssetFallback>();
     }
 
     public bool Verify(bool verbose = true)
     {
         List<Action> warnings = new List<Action>();
         var amountToMint = Configurator.Options.Generation.SerieCount;
-        Load(verbose);
-        if (verbose)
+
+        #region Create folders
+
+        Layers.Clear();
+        if (!Directory.Exists($"{Paths.FILESYSTEM}"))
         {
-            logger?.LogInfo("Verifying whether layers are fucked up or not...");
+            Directory.CreateDirectory($"{Paths.FILESYSTEM}");
+            logger?.LogInfo("Created FS root directory: " + $"{Paths.FILESYSTEM}");
         }
+        if (!Directory.Exists($"{Paths.LAYERS}"))
+        {
+            Directory.CreateDirectory($"{Paths.LAYERS}");
+            logger?.LogInfo($"Created FS root directory: {Paths.LAYERS}");
+        }
+        if (!Directory.Exists($"{Paths.RESULTS}"))
+        {
+            Directory.CreateDirectory($"{Paths.RESULTS}");
+            logger?.LogInfo("Created FS root directory: " + $"{Paths.RESULTS}");
+        }
+
+        #endregion Create folders
+
+        if (verbose) logger?.LogInfo("Loading layers");
+        var dirs = Directory.GetDirectories($"{Paths.LAYERS}");
+        for (var i = 0; i < dirs.Length; i++)
+        {
+            Layer layer = new(dirs[i]);
+            //logger.LogInfo($"Layer {i}: {layer.Name}");
+            Regex reg = new Regex(@"[0-9]+.json");
+            var assets = Directory.GetFiles(dirs[i], "*.json").Where(s => reg.IsMatch(s));
+            for (var j = 0; j < assets.Count(); j++)
+            {
+                var assetPath = assets.ElementAt(j);
+                if (Asset.TryParse(out Asset asset, dirs[i], j, logger))
+                {
+                    layer.Assets.Add(asset);
+                    //logger.LogInfo($"Asset {j} | id: {asset.Id}");
+                }
+            }
+
+            if (layer.Assets.Count > 0)
+            {
+                Layers.Add(layer);
+            }
+        }
+
+        if (verbose) logger?.LogInfo("Verifying whether layers are fucked up or not...");
+
         var fileExtension = string.Empty;
         foreach (Layer layer in Layers)
         {
@@ -58,10 +102,9 @@ internal class Filesystem
                 warnings.Add(() => logger?.LogWarning("Assets sum in layer: " + layer.Path + " is greater than the SERIE_AMOUNT, adjust it if you want amounts in metadata to actually represent probabilities"));
             }
         }
-        if (verbose)
-        {
-            logger?.LogInfo("Verifying some weird math...");
-        }
+
+        if (verbose) logger?.LogInfo("Verifying some weird math...");
+
         var dispositions = 1;
         Layers.ForEach(l => dispositions *= l.Assets.Count);
         if (dispositions < amountToMint)
@@ -73,16 +116,24 @@ internal class Filesystem
         {
             warnings.Add(() => logger?.LogWarning("The amount to mint is set to 0 in the configuration file"));
         }
-        bool incompatiblesError = false;
-        foreach (AssetFallback fallback in AssetFallbacks)//TODO finish verifying fallbacks
+
+        if (Directory.Exists($"{Paths.FALLBACKS}"))
         {
-            if (fallback.Metadata.Incompatibles.Length != Layers.Count)
+            if (Serializer.DeserializeJson($"{Paths.FALLBACKS}", "fallbacks.json", out FallbackMetadata meta))
             {
-                logger?.LogError($"Incorrect incompatibles count in fallback: {fallback.Id} ");
-                incompatiblesError = true;
+                FallbackMetadata = meta;
+                if (!FallbackMetadata.Verify(Layers.Count))
+                {
+                    logger?.LogError("Errors in fallback metadata");
+                    return false;
+                }
+                logger?.LogInfo($"Found {FallbackMetadata.GetFallbacksByPriority().Count} fallbacks definitions");
+            }
+            else
+            {
+                logger?.LogWarning("Unable to deserialize fallbacks metadata");
             }
         }
-        if (incompatiblesError) return false;
         if (verbose)
         {
             logger?.LogInfo("Verification process passed with " + warnings.Count + " warnings", ConsoleColor.Green);
@@ -92,63 +143,5 @@ internal class Filesystem
             }
         }
         return true;
-    }
-
-    private void Load(bool verbose = true)
-    {
-        Layers.Clear();
-        AssetFallbacks.Clear();
-        if (!Directory.Exists(Configurator.Options.FilesystemPath))
-        {
-            Directory.CreateDirectory(Configurator.Options.FilesystemPath);
-            logger?.LogInfo("Created FS root directory: " + Configurator.Options.FilesystemPath);
-        }
-        if (!Directory.Exists(Configurator.Options.FilesystemPath + "\\layers"))
-        {
-            Directory.CreateDirectory(Configurator.Options.FilesystemPath + "\\layers");
-            logger?.LogInfo("Created FS root directory: " + Configurator.Options.FilesystemPath + "\\layers");
-        }
-        if (!Directory.Exists(Configurator.Options.ResultsPath))
-        {
-            Directory.CreateDirectory(Configurator.Options.ResultsPath);
-            logger?.LogInfo("Created FS root directory: " + Configurator.Options.ResultsPath);
-        }
-
-        if (verbose) logger?.LogInfo("Loading layers");
-        var dirs = Directory.GetDirectories(Configurator.Options.FilesystemPath + "\\layers");
-        for (var i = 0; i < dirs.Length; i++)
-        {
-            Layer layer = new(dirs[i]);
-            var assets = Directory.GetDirectories(dirs[i]);
-            var currentAssets = assets.Length;
-            for (var j = 0; j < assets.Length; j++)
-            {
-                var assetPath = assets[j];
-                if (Asset.TryParse(out Asset asset, assetPath, j, logger))
-                {
-                    layer.Assets.Add(asset);
-                    //logger.LogInfo($"Asset {j}: {asset.Id}, {assetPath}");
-                }
-            }
-            if (currentAssets > 0)
-            {
-                Layers.Add(layer);
-                //logger.LogInfo($"Layer {i}: {layer.Name}");
-            }
-        }
-        if (Directory.Exists(Configurator.Options.FilesystemPath + "\\layers_fallback"))
-        {
-            var fallbackDirs = Directory.GetDirectories(Configurator.Options.FilesystemPath + "\\layers_fallback");
-            if (verbose)
-            { logger?.LogInfo("Loading asset fallbacks"); }
-            for (var i = 0; i < fallbackDirs.Length; i++)
-            {
-                if (AssetFallback.TryParse(out AssetFallback fallback, fallbackDirs[i], i, logger))
-                {
-                    AssetFallbacks.Add(fallback);
-                }
-            }
-            logger?.LogInfo($"Found {AssetFallbacks.Count} fallbacks");
-        }
     }
 }

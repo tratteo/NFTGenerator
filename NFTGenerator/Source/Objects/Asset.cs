@@ -1,18 +1,17 @@
 ﻿// Copyright Matteo Beltrame
 
 using HandierCli;
+using NFTGenerator.Source;
 using System.Drawing;
 using System.IO;
 
 namespace NFTGenerator;
 
-internal class Asset : IMediaProvider
+internal class Asset : IMediaProvider, IIdOwner
 {
     public int Id { get; private set; }
 
     public AssetMetadata Metadata { get; private set; }
-
-    public Bitmap Img { get; private set; }
 
     public string AssetAbsolutePath { get; private set; }
 
@@ -28,7 +27,7 @@ internal class Asset : IMediaProvider
         {
             Id = id
         };
-        var metadata = Directory.GetFiles(resourceAbsolutePath, "*.json");
+        var metadata = Directory.GetFiles(resourceAbsolutePath, $"{id}.json");
         if (metadata.Length > 1)
         {
             logger.LogWarning($"Found multiple metadata in path: {resourceAbsolutePath}");
@@ -42,7 +41,7 @@ internal class Asset : IMediaProvider
                 return false;
             }
         }
-        var assets = Directory.GetFiles(resourceAbsolutePath, "*.png");
+        var assets = Directory.GetFiles(resourceAbsolutePath, $"{id}.png");
         if (assets.Length > 1)
         {
             logger.LogWarning($"Found multiple assets in path: {resourceAbsolutePath}");
@@ -72,9 +71,8 @@ internal class Asset : IMediaProvider
             asset.Metadata = assetMetadata;
         }
         asset.AssetAbsolutePath = assetPath;
-        asset.Img = new Bitmap(assetPath);
         return true;
     }
 
-    public Bitmap ProvideMedia() => Img;
+    public string ProvideMediaPath() => AssetAbsolutePath;
 }

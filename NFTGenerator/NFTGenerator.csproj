@@ -17,15 +17,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Blueprint\asset_metadata.json" />
-    <None Remove="Blueprint\nft_metadata.json" />
+    <None Remove="templates\asset_metadata.json" />
+    <None Remove="templates\nft_metadata.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Blueprint\asset_metadata.json">
+    <EmbeddedResource Include="templates\asset_metadata.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
-    <EmbeddedResource Include="Blueprint\nft_metadata.json">
+    <EmbeddedResource Include="templates\nft_metadata.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>
@@ -40,9 +40,6 @@
   <ItemGroup>
     <None Update="blueprint.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Blueprint\assetfallback_metadata.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

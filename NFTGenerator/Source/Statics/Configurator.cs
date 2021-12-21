@@ -9,29 +9,35 @@ namespace NFTGenerator;
 
 internal static class Configurator
 {
-    public const string OPTIONS_NAME = "options.json";
+    public static readonly string OPTIONS_NAME = "options.json";
 
     private static FileSystemWatcher CONFIGWATCHER;
 
     public static Options Options { get; private set; }
 
+    public static void EditOptions(Action<Options> action)
+    {
+        action?.Invoke(Options);
+        Serializer.SerializeJson(Paths.CONFIG, OPTIONS_NAME, Options);
+    }
+
     public static void Load(Logger logger)
     {
-        if (!File.Exists(Paths.CONFIG_PATH + OPTIONS_NAME))
+        if (!File.Exists($"{Paths.CONFIG}{OPTIONS_NAME}"))
         {
-            logger.LogWarning("Options file not found, creating a new one in " + Paths.CONFIG_PATH + OPTIONS_NAME);
+            logger.LogWarning("Options file not found, creating a new one in " + Paths.CONFIG + OPTIONS_NAME);
             Options = new Options();
-            Serializer.SerializeJson(Paths.CONFIG_PATH, OPTIONS_NAME, Options);
+            Serializer.SerializeJson(Paths.CONFIG, OPTIONS_NAME, Options);
         }
         else
         {
-            if (Serializer.DeserializeJson<Options>(Paths.CONFIG_PATH, OPTIONS_NAME, out var options))
+            if (Serializer.DeserializeJson<Options>(Paths.CONFIG, OPTIONS_NAME, out var options))
             {
                 Options = options;
             }
         }
         logger.LogInfo("Loading configuration file and setting up config watcher...");
-        CONFIGWATCHER = new FileSystemWatcher(AppDomain.CurrentDomain.BaseDirectory + Paths.CONFIG_PATH)
+        CONFIGWATCHER = new FileSystemWatcher(Paths.CONFIG)
         {
             NotifyFilter = NotifyFilters.LastWrite,
             Filter = OPTIONS_NAME,
@@ -47,7 +53,7 @@ internal static class Configurator
             {
                 try
                 {
-                    if (Serializer.DeserializeJson<Options>(Paths.CONFIG_PATH, OPTIONS_NAME, out var options))
+                    if (Serializer.DeserializeJson<Options>(Paths.CONFIG, OPTIONS_NAME, out var options))
                     {
                         Options = options;
                     }

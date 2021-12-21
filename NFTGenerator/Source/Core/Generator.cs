@@ -3,8 +3,6 @@
 using HandierCli;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
 using System.Text;
 
 namespace NFTGenerator;
@@ -21,7 +19,7 @@ internal class Generator
         this.logger = logger;
         generatedHashes = new List<int[]>();
         this.filesystem = filesystem;
-        nftMetadataBlueprint = NFTMetadata.Blueprint();
+        nftMetadataBlueprint = NFTMetadata.Template();
     }
 
     public void ResetGenerationParameters()
@@ -40,7 +38,7 @@ internal class Generator
     {
         NFTMetadata meta = nftMetadataBlueprint.Clone();
         var mintedHash = new int[filesystem.Layers.Count];
-        var resPath = $"{Configurator.Options.ResultsPath}\\{index}.png";
+        var resPath = $"{Paths.RESULTS}\\{index}.png";
         List<Asset> toMerge = new List<Asset>();
         for (var i = 0; i < filesystem.Layers.Count; i++)
         {
@@ -61,16 +59,15 @@ internal class Generator
             toMerge.Add(pick);
         }
 
-        //At this point i have all the assets to be merged
         if (toMerge.Count < 2)
         {
             logger.LogError("Unable to merge less than 2 assets!");
             return;
         }
-        List<IMediaProvider> assets = CheckIncompatibles(toMerge);
 
-        Bitmap[] bitmaps = (from asset in assets select asset.ProvideMedia()).ToArray();
-        Media.ComposePNG(resPath, logger, bitmaps);
+        List<IMediaProvider> assets = CheckIncompatibles(toMerge, index);
+        progress?.Report(1);
+        Media.ComposePNG(resPath, logger, assets.ToArray());
 
         float generationProbability = 1F;
         generationProbability *= toMerge[0].Metadata.Amount / (float)Configurator.Options.Generation.SerieCount;
@@ -95,14 +92,13 @@ internal class Generator
             stringBuilder.Append($"{val} ");
         }
         string report = stringBuilder.ToString();
-        Serializer.WriteAll($"{Configurator.Options.ResultsPath}\\rarities\\", $"{index}.rarity", $"Probability: {generationProbability}\nHash: {stringBuilder}");
+        Serializer.WriteAll($"{Paths.RESULTS}\\rarities\\", $"{index}.rarity", $"Probability: {generationProbability}\nHash: {stringBuilder}");
 
         if (!Configurator.Options.Generation.AssetsOnly)
         {
-            Serializer.SerializeJson($"{Configurator.Options.ResultsPath}\\", $"{index}.json", meta);
+            Serializer.SerializeJson($"{Paths.RESULTS}\\", $"{index}.json", meta);
         }
         generatedHashes.Add(mintedHash);
-        progress?.Report(1);
     }
 
     private Asset GetLastLayerValidAsset(int[] hash)
@@ -123,52 +119,36 @@ internal class Generator
         return null;
     }
 
-    private List<IMediaProvider> CheckIncompatibles(List<Asset> assets)
+    private List<IMediaProvider> CheckIncompatibles(List<Asset> assets, int genIndex)
     {
-        var fallbacks = filesystem.AssetFallbacks;
-        var iters = assets.Count;
-        List<Asset> incompatibles = new List<Asset>();// used to keep track of found incompatibles
-        // Cycle fallbacks
-        for (int i = 0; i < fallbacks.Count; i++)
+        foreach (var fallbackDef in filesystem.FallbackMetadata.GetFallbacksByPriority())
         {
-            var fallbacksArr = fallbacks[i].Metadata.Incompatibles;// int array
-            //var numberIncompatible = fallbacks[i].Metadata.IncompatiblesCount;// incompatibles sum
-            incompatibles.Clear();
-            if (ArrayEquality(fallbacksArr, assets, out int firstHit))
+            if (fallbackDef.CheckIncompatibleHit(assets, out int firstHit, out List<int> toRemove))
             {
-                logger.LogInfo("Found incompatible");
-                List<IMediaProvider> res = new List<IMediaProvider>();
+                //logger.LogWarning($"Found incompatible, hash:");
+                //foreach (var asset in assets)
+                //{
+                //    logger.LogInfo($"{asset.Id} ", false);
+                //}
+                //logger.LogWarning($"\nShould remove indexes:");
+                //foreach (var index in toRemove)
+                //{
+                //    logger.LogInfo($"{index} ", false);
+                //}
 
-                for (var v = 0; v < fallbacksArr.Length; v++)
+                List<IMediaProvider> res = new List<IMediaProvider>();
+                for (int i = 0; i < assets.Count; i++)
                 {
-                    if (fallbacksArr[v] == -1)
+                    if (!toRemove.Contains(i))
                     {
-                        res.Add(assets[v]);
+                        res.Add(assets[i]);
                     }
                 }
-                res.Insert(firstHit, fallbacks[i]);
+                res.Insert(firstHit, fallbackDef);
                 return res;
             }
         }
-        return assets.ConvertAll(a => a as IMediaProvider);
-    }
-
-    private bool ArrayEquality(int[] arr, List<Asset> assets, out int firstIndex)
-    {
-        firstIndex = -1;
-        if (arr.Length != assets.Count) return false;
-        for (int i = 0; i < arr.Length; i++)
-        {
-            if (arr[i] is not (-1) and not (-2))
-            {
-                if (!arr[i].Equals(assets[i].Id))
-                {
-                    return false;
-                }
-                firstIndex = firstIndex == -1 ? i : firstIndex;
-            }
-        }
-        return true;
+        return new List<IMediaProvider>(assets);
     }
 
     private bool IsHashValid(int[] current)

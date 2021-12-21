@@ -4,7 +4,7 @@ using System.Drawing;
 
 namespace NFTGenerator;
 
-internal interface IMediaProvider
+public interface IMediaProvider
 {
-    public Bitmap ProvideMedia();
+    public string ProvideMediaPath();
 }

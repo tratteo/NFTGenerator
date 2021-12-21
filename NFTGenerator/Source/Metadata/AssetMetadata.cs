@@ -8,7 +8,7 @@ namespace NFTGenerator;
 [System.Serializable]
 internal class AssetMetadata
 {
-    public const string BLUEPRINT = "asset_metadata.json";
+    public const string TEMPLATE_NAME = "asset_metadata.json";
 
     [JsonProperty("amount")]
     public int Amount { get; set; }
@@ -16,7 +16,7 @@ internal class AssetMetadata
     [JsonProperty("attributes")]
     public List<AttributeMetadata> Attributes { get; set; }
 
-    public static AssetMetadata Blueprint() => Serializer.DeserializeJson<AssetMetadata>(Paths.BLUEPRINT_PATH, BLUEPRINT, out var metadata) ? metadata : null;
+    public static AssetMetadata Template() => Serializer.DeserializeJson<AssetMetadata>(Paths.TEMPLATES, TEMPLATE_NAME, out var metadata) ? metadata : null;
 
     public override string ToString()
     {

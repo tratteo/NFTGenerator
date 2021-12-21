@@ -8,19 +8,11 @@ namespace NFTGenerator;
 [Serializable]
 internal class Options
 {
-    [JsonProperty("filesystem_path")]
-    public string FilesystemPath { get; init; }
-
-    [JsonProperty("results_path")]
-    public string ResultsPath { get; init; }
-
     [JsonProperty("generation")]
     public GenerationOptions Generation { get; init; }
 
     public Options()
     {
-        FilesystemPath = "filesystem";
-        ResultsPath = "filesystem\\results";
         Generation = new GenerationOptions()
         {
             AllowDuplicates = false,
@@ -36,7 +28,7 @@ internal class Options
         public bool AllowDuplicates { get; init; }
 
         [JsonProperty("serie_count")]
-        public int SerieCount { get; init; }
+        public int SerieCount { get; set; }
 
         [JsonProperty("assets_only")]
         public bool AssetsOnly { get; init; }

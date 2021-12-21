@@ -1,7 +1,6 @@
 ﻿// Copyright Matteo Beltrame
 
 using HandierCli;
-using NFTGenerator.Source.Metadata;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -17,7 +16,7 @@ internal static class CommandsDelegates
         {
             case "res":
                 var valid = true;
-                var assets = Directory.GetFiles(Configurator.Options.ResultsPath, "*.*").Where(s => s.EndsWith(".gif") || s.EndsWith(".jpeg") || s.EndsWith(".png")).ToArray();
+                var assets = Directory.GetFiles($"{Paths.RESULTS}", "*.*").Where(s => s.EndsWith(".gif") || s.EndsWith(".jpeg") || s.EndsWith(".png")).ToArray();
                 if (assets.Length <= 0)
                 {
                     logger.LogWarning("There is nothing in here");
@@ -36,7 +35,7 @@ internal static class CommandsDelegates
 
                 if (!Configurator.Options.Generation.AssetsOnly)
                 {
-                    var metadata = Directory.GetFiles(Configurator.Options.ResultsPath, "*.json");
+                    var metadata = Directory.GetFiles($"{Paths.RESULTS}", "*.json");
 
                     if (assets.Length == metadata.Length && metadata.Length == 0)
                     {
@@ -78,106 +77,48 @@ internal static class CommandsDelegates
         switch (handler.GetPositional(0))
         {
             case "fs":
-                Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath);
+                logger.LogInfo($"{Paths.FILESYSTEM}");
+                Process.Start("explorer.exe", $"{Paths.FILESYSTEM}");
                 break;
 
             case "res":
-                Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.ResultsPath);
+                Process.Start("explorer.exe", $"{Paths.RESULTS}");
                 break;
 
-            case "layers":
+            case "layer":
                 if (handler.GetKeyed("-n", out string layerNumber))
                 {
                     if (int.TryParse(layerNumber, out int layerId) && layerId >= 0 && layerId < filesystem.Layers.Count)
                     {
                         Layer layer = filesystem.Layers[layerId];
-                        logger?.LogInfo(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\" + layer.Name);
-                        Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\layers\\" + layer.Name);
+                        Process.Start("explorer.exe", $"{Paths.LAYERS}{layer.Name}");
                     }
                 }
                 else
                 {
-                    Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\layers");
+                    Process.Start("explorer.exe", $"{Paths.LAYERS}");
                 }
                 break;
 
             case "config":
                 using (Process fileopener = new())
                 {
-                    fileopener.StartInfo.FileName = "explorer"; fileopener.StartInfo.Arguments = Paths.CONFIG_PATH + Configurator.OPTIONS_NAME; fileopener.Start();
+                    fileopener.StartInfo.FileName = "explorer"; fileopener.StartInfo.Arguments = $"{Paths.CONFIG}{Configurator.OPTIONS_NAME}";
+                    fileopener.Start();
                 }
                 break;
 
             case "fallbacks":
-                if (handler.GetKeyed("-n", out string fallbackNumber))
-                {
-                    if (int.TryParse(fallbackNumber, out int fallbackId) && fallbackId >= 0 && fallbackId < filesystem.AssetFallbacks.Count)
-                    {
-                        logger?.LogInfo(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + $"\\fallback_{fallbackId}");
-                        Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\layers_fallback\\" + $"fallback_{fallbackId}");
-                    }
-                }
-                else
-                {
-                    Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.FilesystemPath + "\\layers_fallback");
-                }
+                Process.Start("explorer.exe", $"{Paths.FALLBACKS}");
                 break;
 
             case "root":
-                Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory);
+                Process.Start("explorer.exe", $"{Paths.ROOT}");
                 break;
 
             default:
                 logger.LogWarning("Unable to find path");
                 break;
-        }
-    }
-
-    //overloaded method needed to create the fallback folder given the number of the eventual fallbacks
-    public static void CreateFilesystemSchemaCMD(Filesystem filesystem, string fallbacks, Logger logger)
-    {
-        int fallbackNumber;
-        try
-        {
-            fallbackNumber = int.Parse(fallbacks);
-        }
-        catch (Exception)
-        {
-            logger.LogError("Arguments must be integers");
-            return;
-        }
-        for (var i = 0; i < fallbackNumber; i++)
-        {
-            var fallbackName = $"fallback_{i}";
-            Serializer.SerializeJson($"{Configurator.Options.FilesystemPath}\\layers_fallback\\{fallbackName}\\",
-                "fallback_metadata.json", AssetFallbackMetadata.Blueprint());
-        }
-    }
-
-    public static void CreateFilesystemSchemaCMD(Filesystem filesystem, string layers, string assets, Logger logger)
-    {
-        int layersNumber;
-        int assetsNumber;
-        try
-        {
-            layersNumber = int.Parse(layers);
-            assetsNumber = int.Parse(assets);
-        }
-        catch (Exception)
-        {
-            logger.LogError("Arguments must be integers");
-            return;
-        }
-        for (var i = 0; i < layersNumber; i++)
-        {
-            var layerName = $"layer_{i}";
-            for (var j = 0; j < assetsNumber; j++)
-            {
-                var assetFolder = $"asset_{j}";
-                //Directory.CreateDirectory(assetFolder);
-                Serializer.SerializeJson($"{Configurator.Options.FilesystemPath}\\layers\\{layerName}\\{assetFolder}\\",
-                    "metadata.json", AssetMetadata.Blueprint());
-            }
         }
     }
 
@@ -189,54 +130,38 @@ internal static class CommandsDelegates
             case "res":
                 if (force)
                 {
-                    PurgeRecursive(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.ResultsPath, logger);
+                    PurgeRecursive($"{Paths.RESULTS}", logger);
                     logger.LogInfo("Purged results");
                 }
                 else
                 {
-                    logger.LogInfo("Are you sure you want to purge results folder? (Y/N)", ConsoleColor.DarkGreen);
+                    logger.LogInfo("Are you sure you want to purge results folder? (Y/N)", ConsoleColor.DarkYellow);
                     answer = Console.ReadLine();
                     if (answer.ToLower().Equals("y"))
                     {
-                        PurgeRecursive(AppDomain.CurrentDomain.BaseDirectory + Configurator.Options.ResultsPath, logger);
+                        PurgeRecursive($"{Paths.RESULTS}", logger);
                         logger.LogInfo("Purged results");
                     }
                 }
                 break;
 
             case "layers":
-                if (force)
+                logger.LogInfo("Are you sure you want to purge layers? (Y/N)", ConsoleColor.DarkYellow);
+                answer = Console.ReadLine();
+                if (answer.ToLower().Equals("y"))
                 {
-                    PurgeRecursive(Configurator.Options.FilesystemPath + "\\layers", logger);
+                    PurgeRecursive($"{Paths.LAYERS}", logger);
                     logger.LogInfo("Purged layers");
-                }
-                else
-                {
-                    logger.LogInfo("Are you sure you want to purge layers? (Y/N)", ConsoleColor.DarkGreen);
-                    answer = Console.ReadLine();
-                    if (answer.ToLower().Equals("y"))
-                    {
-                        PurgeRecursive(Configurator.Options.FilesystemPath + "\\layers", logger);
-                        logger.LogInfo("Purged layers");
-                    }
                 }
                 break;
 
             case "fallbacks":
-                if (force)
+                logger.LogInfo("Are you sure you want to purge fallbacks? (Y/N)", ConsoleColor.DarkYellow);
+                answer = Console.ReadLine();
+                if (answer.ToLower().Equals("y"))
                 {
-                    PurgeRecursive(Configurator.Options.FilesystemPath + "\\layers_fallback", logger);
+                    PurgeRecursive($"{Paths.FALLBACKS}", logger);
                     logger.LogInfo("Purged fallbacks");
-                }
-                else
-                {
-                    logger.LogInfo("Are you sure you want to purge fallbacks? (Y/N)", ConsoleColor.DarkGreen);
-                    answer = Console.ReadLine();
-                    if (answer.ToLower().Equals("y"))
-                    {
-                        PurgeRecursive(Configurator.Options.FilesystemPath + "\\layers_fallback", logger);
-                        logger.LogInfo("Purged fallbacks");
-                    }
                 }
                 break;
         }

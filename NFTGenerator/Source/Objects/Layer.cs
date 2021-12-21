@@ -35,10 +35,10 @@ internal class Layer
 
     private (string, string) SplitPath(string path)
     {
-        var index = path.LastIndexOf("/");
+        var index = path.LastIndexOf("\\");
         if (index == -1)
         {
-            index = path.LastIndexOf("\\");
+            index = path.LastIndexOf("/");
         }
         var folder = index < 0 ? string.Empty : path[..(index + 1)];
         var name = path.Substring(index + 1, path.Length - index - 1);
