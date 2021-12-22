@@ -24,10 +24,31 @@ internal class Filesystem
         this.logger = logger;
     }
 
+    public float CalculateDispositions()
+    {
+        float dispositions = float.MaxValue;
+        int bound = 1;
+        foreach (Layer layer in Layers)
+        {
+            bound *= layer.Assets.Count;
+            float avgAssetsDistrib = 1;
+            foreach (Asset asset in layer.Assets)
+            {
+                avgAssetsDistrib *= asset.Metadata.Amount;
+            }
+            if (avgAssetsDistrib < dispositions)
+            {
+                dispositions = avgAssetsDistrib;
+            }
+        }
+        return Math.Min(dispositions, bound);
+    }
+
     public bool Verify(bool verbose = true)
     {
-        List<Action> warnings = new List<Action>();
-        var amountToMint = Configurator.Options.Generation.SerieCount;
+        List<string> warnings = new List<string>();
+        List<string> errors = new List<string>();
+        var serieAmount = Configurator.Options.Generation.SerieCount;
 
         #region Create folders
 
@@ -50,71 +71,58 @@ internal class Filesystem
 
         #endregion Create folders
 
-        if (verbose) logger?.LogInfo("Loading layers");
-        var dirs = Directory.GetDirectories($"{Paths.LAYERS}");
-        for (var i = 0; i < dirs.Length; i++)
+        int assetsCount = 0;
+        var fileExtension = string.Empty;
+        var layerNames = Directory.GetDirectories($"{Paths.LAYERS}");
+        for (var i = 0; i < layerNames.Length; i++)
         {
-            Layer layer = new(dirs[i]);
+            int amount = 0;
+            Layer layer = new(layerNames[i]);
             //logger.LogInfo($"Layer {i}: {layer.Name}");
             Regex reg = new Regex(@"[0-9]+.json");
-            var assets = Directory.GetFiles(dirs[i], "*.json").Where(s => reg.IsMatch(s));
+            var assets = Directory.GetFiles(layerNames[i], "*.json").Where(s => reg.IsMatch(s));
             for (var j = 0; j < assets.Count(); j++)
             {
-                var assetPath = assets.ElementAt(j);
-                if (Asset.TryParse(out Asset asset, dirs[i], j, logger))
-                {
-                    layer.Assets.Add(asset);
-                    //logger.LogInfo($"Asset {j} | id: {asset.Id}");
-                }
-            }
+                string name = Paths.Split(assets.ElementAt(j)).Item2.Replace(".json", string.Empty);
 
+                if (!int.TryParse(name, out int id) || !Asset.TryParse(out Asset asset, layerNames[i], id, logger)) continue;
+
+                layer.Assets.Add(asset);
+                //logger.LogInfo($"Asset {j} | id: {asset.Id}");
+                amount += asset.Metadata.Amount;
+                FileInfo info = new(asset.AssetAbsolutePath);
+
+                if (info.Extension != fileExtension && fileExtension != string.Empty)
+                {
+                    errors.Add($"Assets are not of the same type at: {asset.AssetAbsolutePath}");
+                }
+                fileExtension = info.Extension;
+            }
             if (layer.Assets.Count > 0)
             {
                 Layers.Add(layer);
             }
+            if (amount < serieAmount)
+            {
+                errors.Add($"Wrong assets sum in layer: {layer.Name}");
+            }
+            else if (amount > serieAmount)
+            {
+                warnings.Add($"Assets sum in layer: {layer.Name} is greater than the SERIE_AMOUNT");
+            }
+            assetsCount += layer.Assets.Count;
         }
 
-        if (verbose) logger?.LogInfo("Verifying whether layers are fucked up or not...");
-
-        var fileExtension = string.Empty;
-        foreach (Layer layer in Layers)
-        {
-            var amount = 0;
-            foreach (Asset a in layer.Assets)
-            {
-                amount += a.Metadata.Amount;
-                FileInfo info = new(a.AssetAbsolutePath);
-
-                if (info.Extension != fileExtension && fileExtension != string.Empty)
-                {
-                    logger?.LogError("Assets are not of the same type at: " + a.AssetAbsolutePath);
-                    return false;
-                }
-                fileExtension = info.Extension;
-            }
-            if (amount < amountToMint)
-            {
-                logger?.LogError("Wrong assets sum in layer: " + layer.Path);
-                return false;
-            }
-            else if (amount > amountToMint)
-            {
-                warnings.Add(() => logger?.LogWarning("Assets sum in layer: " + layer.Path + " is greater than the SERIE_AMOUNT, adjust it if you want amounts in metadata to actually represent probabilities"));
-            }
-        }
-
-        if (verbose) logger?.LogInfo("Verifying some weird math...");
-
+        if (verbose) logger?.LogInfo($"Parsed {Layers.Count} layers for a total of {assetsCount} assets");
         var dispositions = 1;
         Layers.ForEach(l => dispositions *= l.Assets.Count);
-        if (dispositions < amountToMint)
+        if (dispositions < serieAmount)
         {
-            logger?.LogError("There are less mathematical available disposition than the amount to mint (" + amountToMint + ")");
-            return false;
+            errors.Add($"There are less mathematical available disposition than the amount to mint ({serieAmount})");
         }
-        if (amountToMint == 0)
+        if (serieAmount == 0)
         {
-            warnings.Add(() => logger?.LogWarning("The amount to mint is set to 0 in the configuration file"));
+            warnings.Add("The amount to mint is set to 0 in the configuration file");
         }
 
         if (Directory.Exists($"{Paths.FALLBACKS}"))
@@ -124,24 +132,20 @@ internal class Filesystem
                 FallbackMetadata = meta;
                 if (!FallbackMetadata.Verify(Layers.Count))
                 {
-                    logger?.LogError("Errors in fallback metadata");
-                    return false;
+                    errors.Add("Errors in fallback metadata");
                 }
-                logger?.LogInfo($"Found {FallbackMetadata.GetFallbacksByPriority().Count} fallbacks definitions");
+                if (verbose) logger?.LogInfo($"Parsed {FallbackMetadata.GetFallbacksByPriority().Count} fallback definitions");
             }
             else
             {
-                logger?.LogWarning("Unable to deserialize fallbacks metadata");
+                warnings.Add("Unable to deserialize fallbacks metadata");
             }
         }
-        if (verbose)
-        {
-            logger?.LogInfo("Verification process passed with " + warnings.Count + " warnings", ConsoleColor.Green);
-            foreach (Action w in warnings)
-            {
-                w?.Invoke();
-            }
-        }
-        return true;
+        ConsoleColor color = warnings.Count > 0 ? ConsoleColor.DarkYellow : ConsoleColor.Green;
+        color = errors.Count > 0 ? ConsoleColor.DarkRed : ConsoleColor.Green;
+        logger?.LogInfo($"Verification process passed with {errors.Count} errors and {warnings.Count} warnings\n", color);
+        warnings.ForEach(w => logger?.LogWarning(w));
+        errors.ForEach(e => logger?.LogError(e));
+        return errors.Count <= 0;
     }
 }

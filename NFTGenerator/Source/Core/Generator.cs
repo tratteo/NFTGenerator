@@ -3,6 +3,7 @@
 using HandierCli;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace NFTGenerator;
@@ -12,12 +13,12 @@ internal class Generator
     private readonly Filesystem filesystem;
     private readonly Logger logger;
     private readonly NFTMetadata nftMetadataBlueprint;
-    private readonly List<int[]> generatedHashes;
+    private readonly List<List<int>> generatedHashes;
 
     public Generator(Filesystem filesystem, Logger logger)
     {
         this.logger = logger;
-        generatedHashes = new List<int[]>();
+        generatedHashes = new List<List<int>>();
         this.filesystem = filesystem;
         nftMetadataBlueprint = NFTMetadata.Template();
     }
@@ -28,7 +29,7 @@ internal class Generator
         {
             foreach (Asset asset in layer.Assets)
             {
-                asset.MintedAmount = 0;
+                asset.UsedAmount = 0;
             }
         }
         generatedHashes.Clear();
@@ -37,27 +38,31 @@ internal class Generator
     public void GenerateSingle(int index, IProgress<int> progress = null)
     {
         NFTMetadata meta = nftMetadataBlueprint.Clone();
-        var mintedHash = new int[filesystem.Layers.Count];
+        var mintedHash = new List<int>();
         var resPath = $"{Paths.RESULTS}\\{index}.png";
         List<Asset> toMerge = new List<Asset>();
-        for (var i = 0; i < filesystem.Layers.Count; i++)
+        int cycle = 0;
+        do
         {
-            Asset pick = filesystem.Layers[i].GetRandom();
-            mintedHash[i] = pick.Id;
-
-            //We are in last layer and there is a duplicate
-            if (!Configurator.Options.Generation.AllowDuplicates && i == filesystem.Layers.Count - 1 && !IsHashValid(mintedHash))
+            if (cycle > 0)
             {
-                pick = GetLastLayerValidAsset(mintedHash);
-                mintedHash[i] = pick.Id;
+                //logger.LogWarning("Found duplicate, brute forcing again");
             }
-
-            lock (pick)
+            cycle++;
+            toMerge.Clear();
+            mintedHash.Clear();
+            for (var i = 0; i < filesystem.Layers.Count; i++)
             {
-                pick.MintedAmount++;
+                Asset pick = filesystem.Layers[i].GetRandom();
+                mintedHash.Add(pick.Id);
+
+                toMerge.Add(pick);
             }
-            toMerge.Add(pick);
+            if (Configurator.Options.Generation.AllowDuplicates) break;
         }
+        while (!IsHashValid(mintedHash));
+
+        toMerge.ForEach(a => a.UsedAmount++);
 
         if (toMerge.Count < 2)
         {
@@ -98,25 +103,10 @@ internal class Generator
         {
             Serializer.SerializeJson($"{Paths.RESULTS}\\", $"{index}.json", meta);
         }
-        generatedHashes.Add(mintedHash);
-    }
-
-    private Asset GetLastLayerValidAsset(int[] hash)
-    {
-        if (!filesystem.Layers[^1].HasMintableAssets())
+        lock (generatedHashes)
         {
-            return null;
+            generatedHashes.Add(mintedHash);
         }
-        foreach (Asset asset in filesystem.Layers[^1].Assets)
-        {
-            if (asset.MintedAmount < asset.Metadata.Amount && asset.Id != hash[^1])
-            {
-                //Valid asset
-                return asset;
-            }
-        }
-        logger.LogError("Wait, WTF, unable to find a last layer available asset, this means that assets in the last layer are less than expected!");
-        return null;
     }
 
     private List<IMediaProvider> CheckIncompatibles(List<Asset> assets, int genIndex)
@@ -151,13 +141,13 @@ internal class Generator
         return new List<IMediaProvider>(assets);
     }
 
-    private bool IsHashValid(int[] current)
+    private bool IsHashValid(IEnumerable<int> current)
     {
         return generatedHashes.FindAll((h) =>
         {
-            for (var i = 0; i < current.Length; i++)
+            for (var i = 0; i < current.Count(); i++)
             {
-                if (current[i] != h[i])
+                if (current.ElementAt(i) != h[i])
                 {
                     return false;
                 }

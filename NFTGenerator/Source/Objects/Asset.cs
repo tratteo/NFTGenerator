@@ -15,7 +15,7 @@ internal class Asset : IMediaProvider, IIdOwner
 
     public string AssetAbsolutePath { get; private set; }
 
-    public int MintedAmount { get; set; } = 0;
+    public int UsedAmount { get; set; } = 0;
 
     private Asset()
     {

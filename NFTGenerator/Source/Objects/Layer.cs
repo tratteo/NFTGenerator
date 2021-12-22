@@ -20,28 +20,16 @@ internal class Layer
         Assets = new List<Asset>();
         random = new Random();
         Path = path;
-        Name = SplitPath(path).Item2;
+        Name = Paths.Split(path).Item2;
     }
 
     public Asset GetRandom()
     {
-        List<Asset> match = Assets.FindAll((a) => a.MintedAmount < a.Metadata.Amount);
+        List<Asset> match = Assets.FindAll((a) => a.UsedAmount < a.Metadata.Amount);
         return match.Count <= 0
             ? throw new System.Exception("Wrong error number in layer: " + Path + ", this should never happen")
             : match[random.Next(0, match.Count)];
     }
 
-    public bool HasMintableAssets() => Assets.FindAll((a) => a.MintedAmount < a.Metadata.Amount).Count > 0;
-
-    private (string, string) SplitPath(string path)
-    {
-        var index = path.LastIndexOf("\\");
-        if (index == -1)
-        {
-            index = path.LastIndexOf("/");
-        }
-        var folder = index < 0 ? string.Empty : path[..(index + 1)];
-        var name = path.Substring(index + 1, path.Length - index - 1);
-        return (folder, name);
-    }
+    public bool HasMintableAssets() => Assets.FindAll((a) => a.UsedAmount < a.Metadata.Amount).Count > 0;
 }

@@ -5,13 +5,15 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace NFTGenerator;
 
 internal static class CommandsDelegates
 {
-    public static void VerifyCMD(Filesystem filesystem, string path, Logger logger)
+    public static void Verify(Filesystem filesystem, ArgumentsHandler handler, Logger logger)
     {
+        string path = handler.GetPositional(0);
         switch (path)
         {
             case "res":
@@ -72,7 +74,7 @@ internal static class CommandsDelegates
         }
     }
 
-    public static void OpenPathCMD(Filesystem filesystem, ArgumentsHandler handler, Logger logger)
+    public static void OpenPath(Filesystem filesystem, ArgumentsHandler handler, Logger logger)
     {
         switch (handler.GetPositional(0))
         {
@@ -122,8 +124,10 @@ internal static class CommandsDelegates
         }
     }
 
-    public static void PurgePathCMD(Filesystem filesystem, string path, bool force, Logger logger)
+    public static void PurgePath(Filesystem filesystem, ArgumentsHandler handler, Logger logger)
     {
+        string path = handler.GetPositional(0);
+        bool force = handler.HasFlag("/f");
         string answer;
         switch (path)
         {
@@ -164,6 +168,91 @@ internal static class CommandsDelegates
                     logger.LogInfo("Purged fallbacks");
                 }
                 break;
+        }
+    }
+
+    public static void ScaleSerie(Filesystem filesystem, ArgumentsHandler handler, Logger logger)
+    {
+        logger.LogInfo("Are you sure you want to scale the serie number? (Y/N)", ConsoleColor.DarkYellow);
+        string answer = Console.ReadLine();
+        if (!answer.ToLower().Equals("y"))
+        {
+            return;
+        }
+        logger.LogInfo("It will not be possible to scale it back down, consider saving a copy of your filesystem, you want to proceed? (Y/N)", ConsoleColor.DarkYellow);
+        answer = Console.ReadLine();
+        if (!answer.ToLower().Equals("y"))
+        {
+            return;
+        }
+        if (!filesystem.Verify())
+        {
+            logger.LogError("Unable to scale, filesystem contains errors");
+            return;
+        }
+        else
+        {
+            int factor = 1;
+            try
+            {
+                factor = int.Parse(handler.GetPositional(0));
+                foreach (Layer layer in filesystem.Layers)
+                {
+                    foreach (Asset asset in layer.Assets)
+                    {
+                        asset.Metadata.Amount *= factor;
+                        Serializer.SerializeJson($"{Paths.LAYERS}{layer.Name}\\", $"{asset.Id}.json", asset.Metadata);
+                    }
+                }
+                Configurator.EditOptions(options => options.Generation.SerieCount *= factor);
+            }
+            catch (Exception)
+            {
+                logger.LogError("Unable to parse int factor");
+                return;
+            }
+        }
+    }
+
+    public static async Task Generate(Filesystem filesystem, ArgumentsHandler handler, Logger logger)
+    {
+        if (filesystem.Verify(false))
+        {
+            int amountToMint = Configurator.Options.Generation.SerieCount;
+            if (amountToMint == 0)
+            {
+                logger.LogWarning("Nothing to generate, amount to mint is set to 0");
+            }
+            else if (amountToMint < 0)
+            {
+                logger.LogError("Negative amount to mint (" + amountToMint + ") in config file");
+            }
+            else
+            {
+                Generator generator = new Generator(filesystem, logger);
+                int currentCount = 0;
+                Stopwatch reportWatch = Stopwatch.StartNew();
+                long lastReport = 0;
+                Progress<int> generationProgressReporter = new Progress<int>((p) =>
+                {
+                    currentCount++;
+                    long currentElapsed = reportWatch.ElapsedMilliseconds;
+                    if (currentElapsed - lastReport > 500)
+                    {
+                        lastReport = currentElapsed;
+                        ConsoleExtensions.ClearConsoleLine();
+                        logger.LogInfo($"{currentCount / (float)amountToMint * 100F:0} %", false);
+                    }
+                });
+                Stopwatch watch = Stopwatch.StartNew();
+                logger.LogInfo("Parallelizing work...");
+                watch.Restart();
+                Parallel.ForEach(Enumerable.Range(0, amountToMint), new ParallelOptions() { MaxDegreeOfParallelism = 16 }, (i, token) => generator.GenerateSingle(i, generationProgressReporter));
+                watch.Stop();
+                await Task.Delay(250);
+                ConsoleExtensions.ClearConsoleLine();
+                logger.LogInfo($"Completed in {watch.ElapsedMilliseconds / 1000F:0.000} s", ConsoleColor.Green);
+            }
         }
     }
 
