@@ -2,7 +2,7 @@
 
 using Newtonsoft.Json;
 
-namespace NFTGenerator;
+namespace NFTGenerator.Metadata;
 
 internal class FileMetadata
 {

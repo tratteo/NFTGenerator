@@ -3,7 +3,7 @@
 using Newtonsoft.Json;
 using System;
 
-namespace NFTGenerator;
+namespace NFTGenerator.Metadata;
 
 [Serializable]
 internal class AttributeMetadata : IEquatable<AttributeMetadata>

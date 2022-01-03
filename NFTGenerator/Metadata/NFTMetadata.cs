@@ -1,10 +1,12 @@
 ﻿// Copyright Matteo Beltrame
 
+using BetterHaveIt;
 using HandierCli;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace NFTGenerator;
+namespace NFTGenerator.Metadata;
 
 [System.Serializable]
 internal class NFTMetadata
@@ -43,7 +45,7 @@ internal class NFTMetadata
 
     public static NFTMetadata Template() => Serializer.DeserializeJson<NFTMetadata>(Paths.TEMPLATES, TEMPLATE_NAME, out var metadata) ? metadata : null;
 
-    public bool Valid(Logger logger)
+    public bool Valid(ILogger logger)
     {
         var valid = true;
         if (Name.Equals(string.Empty))

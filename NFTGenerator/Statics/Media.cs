@@ -1,6 +1,7 @@
 ﻿// Copyright Matteo Beltrame
 
 using HandierCli;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -9,7 +10,7 @@ namespace NFTGenerator;
 
 internal static class Media
 {
-    public static void ComposePNG(string res, Logger logger, params IMediaProvider[] mediaProvider)
+    public static void ComposePNG(string res, ILogger logger, params IMediaProvider[] mediaProvider)
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
         stopwatch.Restart();

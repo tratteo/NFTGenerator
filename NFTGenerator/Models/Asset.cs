@@ -1,11 +1,12 @@
 ﻿// Copyright Matteo Beltrame
 
-using HandierCli;
+using BetterHaveIt;
+using Microsoft.Extensions.Logging;
+using NFTGenerator.Metadata;
 using NFTGenerator.Source;
-using System.Drawing;
 using System.IO;
 
-namespace NFTGenerator;
+namespace NFTGenerator.Models;
 
 internal class Asset : IMediaProvider, IIdOwner
 {
@@ -21,7 +22,7 @@ internal class Asset : IMediaProvider, IIdOwner
     {
     }
 
-    public static bool TryParse(out Asset asset, string resourceAbsolutePath, int id, Logger logger)
+    public static bool TryParse(out Asset asset, string resourceAbsolutePath, int id, ILogger logger)
     {
         asset = new Asset
         {
@@ -34,12 +35,9 @@ internal class Asset : IMediaProvider, IIdOwner
         }
         else if (metadata.Length <= 0)
         {
-            if (!Configurator.Options.Generation.AssetsOnly)
-            {
-                //logger.LogError("Metadata missing in folder: " + resourceAbsolutePath);
-                asset = null;
-                return false;
-            }
+            //logger.LogError("Metadata missing in folder: " + resourceAbsolutePath);
+            asset = null;
+            return false;
         }
         var assets = Directory.GetFiles(resourceAbsolutePath, $"{id}.png");
         if (assets.Length > 1)

@@ -1,9 +1,10 @@
 ﻿// Copyright Matteo Beltrame
 
+using BetterHaveIt;
 using System;
 using System.Collections.Generic;
 
-namespace NFTGenerator;
+namespace NFTGenerator.Models;
 
 internal class Layer
 {
@@ -20,7 +21,7 @@ internal class Layer
         Assets = new List<Asset>();
         random = new Random();
         Path = path;
-        Name = Paths.Split(path).Item2;
+        Name = PathExtensions.Split(path).Item2;
     }
 
     public Asset GetRandom()

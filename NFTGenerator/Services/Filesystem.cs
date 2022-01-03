@@ -1,27 +1,35 @@
 ﻿// Copyright Matteo Beltrame
 
-using HandierCli;
+using BetterHaveIt;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NFTGenerator.Metadata;
+using NFTGenerator.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace NFTGenerator;
+namespace NFTGenerator.Services;
 
-internal class Filesystem
+internal class Filesystem : IFilesystem
 {
-    private readonly Logger logger;
+    private readonly IServiceProvider services;
+    private readonly ILogger<Filesystem> logger;
+    private readonly IConfiguration configuration;
 
     public List<Layer> Layers { get; private set; }
 
     public FallbackMetadata FallbackMetadata { get; private set; }
 
-    public Filesystem(Logger logger)
+    public Filesystem(IServiceProvider services, ILogger<Filesystem> logger, IConfiguration configuration)
     {
         Layers = new List<Layer>();
+        this.services = services;
         this.logger = logger;
+        this.configuration = configuration;
     }
 
     public float CalculateDispositions()
@@ -44,11 +52,12 @@ internal class Filesystem
         return Math.Min(dispositions, bound);
     }
 
-    public bool Verify(bool verbose = true)
+    public bool Verify()
     {
         List<string> warnings = new List<string>();
         List<string> errors = new List<string>();
-        var serieAmount = Configurator.Options.Generation.SerieCount;
+        var serieAmount = configuration.GetValue<int>("Generation:SerieCount");
+        bool verbose = configuration.GetSection("Debug:Verbose").Get<bool>();
 
         #region Create folders
 
@@ -56,17 +65,17 @@ internal class Filesystem
         if (!Directory.Exists($"{Paths.FILESYSTEM}"))
         {
             Directory.CreateDirectory($"{Paths.FILESYSTEM}");
-            logger?.LogInfo("Created FS root directory: " + $"{Paths.FILESYSTEM}");
+            logger?.LogInformation("Created FS root directory: " + $"{Paths.FILESYSTEM}");
         }
         if (!Directory.Exists($"{Paths.LAYERS}"))
         {
             Directory.CreateDirectory($"{Paths.LAYERS}");
-            logger?.LogInfo($"Created FS root directory: {Paths.LAYERS}");
+            logger?.LogInformation($"Created FS root directory: {Paths.LAYERS}");
         }
         if (!Directory.Exists($"{Paths.RESULTS}"))
         {
             Directory.CreateDirectory($"{Paths.RESULTS}");
-            logger?.LogInfo("Created FS root directory: " + $"{Paths.RESULTS}");
+            logger?.LogInformation("Created FS root directory: " + $"{Paths.RESULTS}");
         }
 
         #endregion Create folders
@@ -83,7 +92,7 @@ internal class Filesystem
             var assets = Directory.GetFiles(layerNames[i], "*.json").Where(s => reg.IsMatch(s));
             for (var j = 0; j < assets.Count(); j++)
             {
-                string name = Paths.Split(assets.ElementAt(j)).Item2.Replace(".json", string.Empty);
+                string name = PathExtensions.Split(assets.ElementAt(j)).Item2.Replace(".json", string.Empty);
 
                 if (!int.TryParse(name, out int id) || !Asset.TryParse(out Asset asset, layerNames[i], id, logger)) continue;
 
@@ -113,7 +122,7 @@ internal class Filesystem
             assetsCount += layer.Assets.Count;
         }
 
-        if (verbose) logger?.LogInfo($"Parsed {Layers.Count} layers for a total of {assetsCount} assets");
+        if (verbose) logger?.LogInformation($"Parsed {Layers.Count} layers for a total of {assetsCount} assets");
         var dispositions = 1;
         Layers.ForEach(l => dispositions *= l.Assets.Count);
         if (dispositions < serieAmount)
@@ -134,7 +143,7 @@ internal class Filesystem
                 {
                     errors.Add("Errors in fallback metadata");
                 }
-                if (verbose) logger?.LogInfo($"Parsed {FallbackMetadata.GetFallbacksByPriority().Count} fallback definitions");
+                if (verbose) logger?.LogInformation($"Parsed {FallbackMetadata.GetFallbacksByPriority().Count} fallback definitions");
             }
             else
             {
@@ -143,9 +152,11 @@ internal class Filesystem
         }
         ConsoleColor color = warnings.Count > 0 ? ConsoleColor.DarkYellow : ConsoleColor.Green;
         color = errors.Count > 0 ? ConsoleColor.DarkRed : ConsoleColor.Green;
-        logger?.LogInfo($"Verification process passed with {errors.Count} errors and {warnings.Count} warnings\n", color);
-        warnings.ForEach(w => logger?.LogWarning(w));
         errors.ForEach(e => logger?.LogError(e));
+        warnings.ForEach(w => logger?.LogWarning(w));
+        logger?.LogInformation($"Verification process passed with {errors.Count} errors and {warnings.Count} warnings\n", color);
+        CommandLineService cmdService = services.GetService<CommandLineService>();
+        if (cmdService != null) cmdService.Cli.Logger.LogInfo(string.Empty);
         return errors.Count <= 0;
     }
 }

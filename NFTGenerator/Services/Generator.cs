@@ -1,44 +1,44 @@
 ﻿// Copyright Matteo Beltrame
 
+using BetterHaveIt;
 using HandierCli;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using NFTGenerator.Metadata;
+using NFTGenerator.Models;
+using NFTGenerator.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace NFTGenerator;
+namespace NFTGenerator.Services;
 
-internal class Generator
+internal class Generator : IGenerator
 {
-    private readonly Filesystem filesystem;
-    private readonly Logger logger;
+    private readonly IFilesystem filesystem;
+    private readonly IServiceProvider services;
+    private readonly ILogger<Generator> logger;
     private readonly NFTMetadata nftMetadataBlueprint;
-    private readonly List<List<int>> generatedHashes;
+    private readonly List<int[]> generatedHashes;
+    private readonly IConfiguration configuration;
 
-    public Generator(Filesystem filesystem, Logger logger)
+    public Generator(IServiceProvider services, ILogger<Generator> logger)
     {
+        this.services = services;
         this.logger = logger;
-        generatedHashes = new List<List<int>>();
-        this.filesystem = filesystem;
+        filesystem = services.GetService<IFilesystem>();
+        configuration = services.GetService<IConfiguration>();
+        generatedHashes = new List<int[]>();
         nftMetadataBlueprint = NFTMetadata.Template();
-    }
-
-    public void ResetGenerationParameters()
-    {
-        foreach (Layer layer in filesystem.Layers)
-        {
-            foreach (Asset asset in layer.Assets)
-            {
-                asset.UsedAmount = 0;
-            }
-        }
-        generatedHashes.Clear();
     }
 
     public void GenerateSingle(int index, IProgress<int> progress = null)
     {
+        int serieCount = configuration.GetValue<int>("Generation:SerieCount");
         NFTMetadata meta = nftMetadataBlueprint.Clone();
-        var mintedHash = new List<int>();
+        var mintedHash = new int[filesystem.Layers.Count];
         var resPath = $"{Paths.RESULTS}\\{index}.png";
         List<Asset> toMerge = new List<Asset>();
         int cycle = 0;
@@ -50,15 +50,15 @@ internal class Generator
             }
             cycle++;
             toMerge.Clear();
-            mintedHash.Clear();
+
             for (var i = 0; i < filesystem.Layers.Count; i++)
             {
                 Asset pick = filesystem.Layers[i].GetRandom();
-                mintedHash.Add(pick.Id);
+                mintedHash[i] = pick.Id;
 
                 toMerge.Add(pick);
             }
-            if (Configurator.Options.Generation.AllowDuplicates) break;
+            if (configuration.GetValue<bool>("Generation:AllowDuplicates")) break;
         }
         while (!IsHashValid(mintedHash));
 
@@ -75,21 +75,15 @@ internal class Generator
         Media.ComposePNG(resPath, logger, assets.ToArray());
 
         float generationProbability = 1F;
-        generationProbability *= toMerge[0].Metadata.Amount / (float)Configurator.Options.Generation.SerieCount;
-        generationProbability *= toMerge[1].Metadata.Amount / (float)Configurator.Options.Generation.SerieCount;
-        if (!Configurator.Options.Generation.AssetsOnly)
-        {
-            meta.AddAttributes(toMerge[0].Metadata.Attributes);
-            meta.AddAttributes(toMerge[1].Metadata.Attributes);
-        }
+        generationProbability *= toMerge[0].Metadata.Amount / (float)serieCount;
+        generationProbability *= toMerge[1].Metadata.Amount / (float)serieCount;
+        meta.AddAttributes(toMerge[0].Metadata.Attributes);
+        meta.AddAttributes(toMerge[1].Metadata.Attributes);
 
         for (var i = 2; i < toMerge.Count; i++)
         {
-            if (!Configurator.Options.Generation.AssetsOnly)
-            {
-                meta.AddAttributes(toMerge[i].Metadata.Attributes);
-            }
-            generationProbability *= toMerge[i].Metadata.Amount / (float)Configurator.Options.Generation.SerieCount;
+            meta.AddAttributes(toMerge[i].Metadata.Attributes);
+            generationProbability *= toMerge[i].Metadata.Amount / (float)serieCount;
         }
         StringBuilder stringBuilder = new StringBuilder();
         foreach (int val in mintedHash)
@@ -99,10 +93,7 @@ internal class Generator
         string report = stringBuilder.ToString();
         Serializer.WriteAll($"{Paths.RESULTS}\\rarities\\", $"{index}.rarity", $"Probability: {generationProbability}\nHash: {stringBuilder}");
 
-        if (!Configurator.Options.Generation.AssetsOnly)
-        {
-            Serializer.SerializeJson($"{Paths.RESULTS}\\", $"{index}.json", meta);
-        }
+        Serializer.SerializeJson($"{Paths.RESULTS}\\", $"{index}.json", meta);
         lock (generatedHashes)
         {
             generatedHashes.Add(mintedHash);

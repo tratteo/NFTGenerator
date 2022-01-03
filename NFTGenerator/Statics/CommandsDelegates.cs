@@ -1,6 +1,13 @@
 ﻿// Copyright Matteo Beltrame
 
+using BetterHaveIt;
 using HandierCli;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using NFTGenerator.Metadata;
+using NFTGenerator.Models;
+using NFTGenerator.Services;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -11,8 +18,9 @@ namespace NFTGenerator;
 
 internal static class CommandsDelegates
 {
-    public static void Verify(Filesystem filesystem, ArgumentsHandler handler, Logger logger)
+    public static void Verify(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
+        IConfiguration configuration = services.GetService<IConfiguration>();
         string path = handler.GetPositional(0);
         switch (path)
         {
@@ -35,51 +43,50 @@ internal static class CommandsDelegates
                     }
                 }
 
-                if (!Configurator.Options.Generation.AssetsOnly)
-                {
-                    var metadata = Directory.GetFiles($"{Paths.RESULTS}", "*.json");
+                var metadata = Directory.GetFiles($"{Paths.RESULTS}", "*.json");
 
-                    if (assets.Length == metadata.Length && metadata.Length == 0)
+                if (assets.Length == metadata.Length && metadata.Length == 0)
+                {
+                    logger.LogWarning("There is nothing in here");
+                    return;
+                }
+                if (assets.Length != metadata.Length)
+                {
+                    logger.LogError("There are different numbers of assets and metadata. How the fuck did you manage to do such a thing");
+                    valid = false;
+                }
+                foreach (var data in metadata)
+                {
+                    if (Serializer.DeserializeJson<NFTMetadata>(string.Empty, data, out var nftData))
                     {
-                        logger.LogWarning("There is nothing in here");
-                        return;
-                    }
-                    if (assets.Length != metadata.Length)
-                    {
-                        logger.LogError("There are different numbers of assets and metadata. How the fuck did you manage to do such a thing");
-                        valid = false;
-                    }
-                    foreach (var data in metadata)
-                    {
-                        if (Serializer.DeserializeJson<NFTMetadata>(string.Empty, data, out var nftData))
+                        if (!nftData.Valid(logger))
                         {
-                            if (!nftData.Valid(logger))
-                            {
-                                logger.LogError($"Errors on metadata: {data}");
-                                logger.LogInfo("\n");
-                                valid = false;
-                            }
+                            logger.LogError($"Errors on metadata: {data}");
+                            logger.LogInformation("\n");
+                            valid = false;
                         }
                     }
                 }
                 if (valid)
                 {
-                    logger.LogInfo("All good in the results folder");
+                    logger.LogInformation("All good in the results folder");
                 }
                 break;
 
             case "fs":
-                filesystem.Verify(true);
+                IFilesystem filesystem = services.GetService<IFilesystem>();
+                filesystem.Verify();
                 break;
         }
     }
 
-    public static void OpenPath(Filesystem filesystem, ArgumentsHandler handler, Logger logger)
+    public static void OpenPath(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
+        IConfiguration configuration = services.GetService<IConfiguration>();
+        IFilesystem filesystem = services.GetService<IFilesystem>();
         switch (handler.GetPositional(0))
         {
             case "fs":
-                logger.LogInfo($"{Paths.FILESYSTEM}");
                 Process.Start("explorer.exe", $"{Paths.FILESYSTEM}");
                 break;
 
@@ -102,14 +109,6 @@ internal static class CommandsDelegates
                 }
                 break;
 
-            case "config":
-                using (Process fileopener = new())
-                {
-                    fileopener.StartInfo.FileName = "explorer"; fileopener.StartInfo.Arguments = $"{Paths.CONFIG}{Configurator.OPTIONS_NAME}";
-                    fileopener.Start();
-                }
-                break;
-
             case "fallbacks":
                 Process.Start("explorer.exe", $"{Paths.FALLBACKS}");
                 break;
@@ -124,8 +123,9 @@ internal static class CommandsDelegates
         }
     }
 
-    public static void PurgePath(Filesystem filesystem, ArgumentsHandler handler, Logger logger)
+    public static void PurgePath(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
+        IConfiguration configuration = services.GetService<IConfiguration>();
         string path = handler.GetPositional(0);
         bool force = handler.HasFlag("/f");
         string answer;
@@ -135,51 +135,53 @@ internal static class CommandsDelegates
                 if (force)
                 {
                     PurgeRecursive($"{Paths.RESULTS}", logger);
-                    logger.LogInfo("Purged results");
+                    logger.LogInformation("Purged results");
                 }
                 else
                 {
-                    logger.LogInfo("Are you sure you want to purge results folder? (Y/N)", ConsoleColor.DarkYellow);
+                    logger.LogInformation("Are you sure you want to purge results folder? (Y/N)", ConsoleColor.DarkYellow);
                     answer = Console.ReadLine();
                     if (answer.ToLower().Equals("y"))
                     {
                         PurgeRecursive($"{Paths.RESULTS}", logger);
-                        logger.LogInfo("Purged results");
+                        logger.LogInformation("Purged results");
                     }
                 }
                 break;
 
             case "layers":
-                logger.LogInfo("Are you sure you want to purge layers? (Y/N)", ConsoleColor.DarkYellow);
+                logger.LogInformation("Are you sure you want to purge layers? (Y/N)", ConsoleColor.DarkYellow);
                 answer = Console.ReadLine();
                 if (answer.ToLower().Equals("y"))
                 {
                     PurgeRecursive($"{Paths.LAYERS}", logger);
-                    logger.LogInfo("Purged layers");
+                    logger.LogInformation("Purged layers");
                 }
                 break;
 
             case "fallbacks":
-                logger.LogInfo("Are you sure you want to purge fallbacks? (Y/N)", ConsoleColor.DarkYellow);
+                logger.LogInformation("Are you sure you want to purge fallbacks? (Y/N)", ConsoleColor.DarkYellow);
                 answer = Console.ReadLine();
                 if (answer.ToLower().Equals("y"))
                 {
                     PurgeRecursive($"{Paths.FALLBACKS}", logger);
-                    logger.LogInfo("Purged fallbacks");
+                    logger.LogInformation("Purged fallbacks");
                 }
                 break;
         }
     }
 
-    public static void ScaleSerie(Filesystem filesystem, ArgumentsHandler handler, Logger logger)
+    public static void ScaleSerie(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
-        logger.LogInfo("Are you sure you want to scale the serie number? (Y/N)", ConsoleColor.DarkYellow);
+        IConfiguration configuration = services.GetService<IConfiguration>();
+        IFilesystem filesystem = services.GetService<IFilesystem>();
+        logger.LogInformation("Are you sure you want to scale the serie number? (Y/N)", ConsoleColor.DarkYellow);
         string answer = Console.ReadLine();
         if (!answer.ToLower().Equals("y"))
         {
             return;
         }
-        logger.LogInfo("It will not be possible to scale it back down, consider saving a copy of your filesystem, you want to proceed? (Y/N)", ConsoleColor.DarkYellow);
+        logger.LogInformation("It will not be possible to scale it back down, consider saving a copy of your filesystem, you want to proceed? (Y/N)", ConsoleColor.DarkYellow);
         answer = Console.ReadLine();
         if (!answer.ToLower().Equals("y"))
         {
@@ -204,7 +206,7 @@ internal static class CommandsDelegates
                         Serializer.SerializeJson($"{Paths.LAYERS}{layer.Name}\\", $"{asset.Id}.json", asset.Metadata);
                     }
                 }
-                Configurator.EditOptions(options => options.Generation.SerieCount *= factor);
+                configuration["Generation:SerieCount"] = (configuration.GetValue<int>("Generation:SerieCount") * factor).ToString();
             }
             catch (Exception)
             {
@@ -214,11 +216,14 @@ internal static class CommandsDelegates
         }
     }
 
-    public static async Task Generate(Filesystem filesystem, ArgumentsHandler handler, Logger logger)
+    public static async Task Generate(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
-        if (filesystem.Verify(false))
+        IConfiguration configuration = services.GetService<IConfiguration>();
+        IFilesystem filesystem = services.GetService<IFilesystem>();
+        IGenerator generator = services.GetService<IGenerator>();
+        if (filesystem.Verify())
         {
-            int amountToMint = Configurator.Options.Generation.SerieCount;
+            int amountToMint = configuration.GetValue<int>("Generation:SerieCount");
             if (amountToMint == 0)
             {
                 logger.LogWarning("Nothing to generate, amount to mint is set to 0");
@@ -229,7 +234,6 @@ internal static class CommandsDelegates
             }
             else
             {
-                Generator generator = new Generator(filesystem, logger);
                 int currentCount = 0;
                 Stopwatch reportWatch = Stopwatch.StartNew();
                 long lastReport = 0;
@@ -241,22 +245,22 @@ internal static class CommandsDelegates
                     {
                         lastReport = currentElapsed;
                         ConsoleExtensions.ClearConsoleLine();
-                        logger.LogInfo($"{currentCount / (float)amountToMint * 100F:0} %", false);
+                        logger.LogInformation($"{currentCount / (float)amountToMint * 100F:0} %", false);
                     }
                 });
                 Stopwatch watch = Stopwatch.StartNew();
-                logger.LogInfo("Parallelizing work...");
+                logger.LogInformation("Parallelizing work...");
                 watch.Restart();
                 Parallel.ForEach(Enumerable.Range(0, amountToMint), new ParallelOptions() { MaxDegreeOfParallelism = 16 }, (i, token) => generator.GenerateSingle(i, generationProgressReporter));
                 watch.Stop();
                 await Task.Delay(250);
                 ConsoleExtensions.ClearConsoleLine();
-                logger.LogInfo($"Completed in {watch.ElapsedMilliseconds / 1000F:0.000} s", ConsoleColor.Green);
+                logger.LogInformation($"Completed in {watch.ElapsedMilliseconds / 1000F:0.000} s", ConsoleColor.Green);
             }
         }
     }
 
-    private static void PurgeRecursive(string path, Logger logger = null)
+    private static void PurgeRecursive(string path, ILogger logger = null)
     {
         var amount = 0;
         DirectoryInfo dInfo = new DirectoryInfo(path);
@@ -265,13 +269,13 @@ internal static class CommandsDelegates
             amount++;
             file.Delete();
         }
-        logger?.LogInfo($"Deleted {amount} files");
+        logger?.LogInformation($"Deleted {amount} files");
         amount = 0;
         foreach (DirectoryInfo dir in dInfo.EnumerateDirectories())
         {
             amount++;
             dir.Delete(true);
         }
-        logger?.LogInfo($"Deleted {amount} directories");
+        logger?.LogInformation($"Deleted {amount} directories");
     }
 }

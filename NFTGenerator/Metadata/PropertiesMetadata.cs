@@ -4,7 +4,7 @@ using HandierCli;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace NFTGenerator;
+namespace NFTGenerator.Metadata;
 
 [System.Serializable]
 internal class PropertiesMetadata

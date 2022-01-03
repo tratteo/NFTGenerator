@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 using NFTGenerator.Source;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 
 namespace NFTGenerator.Metadata;
