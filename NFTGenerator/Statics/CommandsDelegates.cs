@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NFTGenerator.Metadata;
-using NFTGenerator.Models;
+using NFTGenerator.Objects;
 using NFTGenerator.Services;
 using System;
 using System.Diagnostics;
@@ -241,7 +241,7 @@ internal static class CommandsDelegates
                 {
                     currentCount++;
                     long currentElapsed = reportWatch.ElapsedMilliseconds;
-                    if (currentElapsed - lastReport > 500)
+                    if (currentElapsed - lastReport > 250)
                     {
                         lastReport = currentElapsed;
                         ConsoleExtensions.ClearConsoleLine();

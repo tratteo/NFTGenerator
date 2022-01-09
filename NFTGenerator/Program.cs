@@ -20,8 +20,8 @@ var host = Host.CreateDefaultBuilder()
     .ConfigureServices((context, services) =>
     {
         services.AddTransient<IGenerator, Generator>();
-        services.AddSingleton<CommandLineService>();
         services.AddSingleton<IFilesystem, Filesystem>();
+        services.AddSingleton<CommandLineService>();
     })
     .Build();
 

@@ -4,7 +4,7 @@ using BetterHaveIt;
 using System;
 using System.Collections.Generic;
 
-namespace NFTGenerator.Models;
+namespace NFTGenerator.Objects;
 
 internal class Layer
 {
@@ -14,11 +14,14 @@ internal class Layer
 
     public string Path { get; private set; }
 
+    public int Index { get; init; }
+
     public string Name { get; private set; }
 
-    public Layer(string path)
+    public Layer(string path, int index)
     {
         Assets = new List<Asset>();
+        Index = index;
         random = new Random();
         Path = path;
         Name = PathExtensions.Split(path).Item2;

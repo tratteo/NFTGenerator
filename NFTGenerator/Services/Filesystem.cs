@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NFTGenerator.Metadata;
-using NFTGenerator.Models;
+using NFTGenerator.Objects;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,18 +17,18 @@ namespace NFTGenerator.Services;
 internal class Filesystem : IFilesystem
 {
     private readonly IServiceProvider services;
-    private readonly ILogger<Filesystem> logger;
+    private readonly ILogger logger;
     private readonly IConfiguration configuration;
 
     public List<Layer> Layers { get; private set; }
 
     public FallbackMetadata FallbackMetadata { get; private set; }
 
-    public Filesystem(IServiceProvider services, ILogger<Filesystem> logger, IConfiguration configuration)
+    public Filesystem(IServiceProvider services, ILoggerFactory loggerFactory, IConfiguration configuration)
     {
         Layers = new List<Layer>();
         this.services = services;
-        this.logger = logger;
+        this.logger = loggerFactory.CreateLogger("Filesystem");
         this.configuration = configuration;
     }
 
@@ -86,7 +86,7 @@ internal class Filesystem : IFilesystem
         for (var i = 0; i < layerNames.Length; i++)
         {
             int amount = 0;
-            Layer layer = new(layerNames[i]);
+            Layer layer = new(layerNames[i], i);
             //logger.LogInfo($"Layer {i}: {layer.Name}");
             Regex reg = new Regex(@"[0-9]+.json");
             var assets = Directory.GetFiles(layerNames[i], "*.json").Where(s => reg.IsMatch(s));

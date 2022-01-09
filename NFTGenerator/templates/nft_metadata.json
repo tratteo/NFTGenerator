@@ -1,17 +1,13 @@
 {
-  "name": "NameDefault",
-  "symbol": "DS",
-  "description": "",
-  "seller_fee_basis_points": 5,
+  "name": "Neon Clouds Collective ",
+  "symbol": "NCC",
+  "description": "Chill out...",
+  "seller_fee_basis_points": 700,
   "image": "image.png",
   "animation_url": "",
   "external_url": "",
   "attributes": [
   ],
-  "collection": {
-    "name": "Default",
-    "family": "Default family"
-  },
   "properties": {
     "files": [
     ],

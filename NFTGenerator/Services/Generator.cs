@@ -1,13 +1,11 @@
 ﻿// Copyright Matteo Beltrame
 
 using BetterHaveIt;
-using HandierCli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NFTGenerator.Metadata;
-using NFTGenerator.Models;
-using NFTGenerator.Services;
+using NFTGenerator.Objects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,15 +17,15 @@ internal class Generator : IGenerator
 {
     private readonly IFilesystem filesystem;
     private readonly IServiceProvider services;
-    private readonly ILogger<Generator> logger;
+    private readonly ILogger logger;
     private readonly NFTMetadata nftMetadataBlueprint;
     private readonly List<int[]> generatedHashes;
     private readonly IConfiguration configuration;
 
-    public Generator(IServiceProvider services, ILogger<Generator> logger)
+    public Generator(IServiceProvider services, ILoggerFactory loggerFactory)
     {
         this.services = services;
-        this.logger = logger;
+        this.logger = loggerFactory.CreateLogger("Generator");
         filesystem = services.GetService<IFilesystem>();
         configuration = services.GetService<IConfiguration>();
         generatedHashes = new List<int[]>();
@@ -40,7 +38,7 @@ internal class Generator : IGenerator
         NFTMetadata meta = nftMetadataBlueprint.Clone();
         var mintedHash = new int[filesystem.Layers.Count];
         var resPath = $"{Paths.RESULTS}\\{index}.png";
-        List<Asset> toMerge = new List<Asset>();
+        List<LayerPick> toMerge = new List<LayerPick>();
         int cycle = 0;
         do
         {
@@ -56,13 +54,13 @@ internal class Generator : IGenerator
                 Asset pick = filesystem.Layers[i].GetRandom();
                 mintedHash[i] = pick.Id;
 
-                toMerge.Add(pick);
+                toMerge.Add(new LayerPick() { Asset = pick, Layer = filesystem.Layers[i] });
             }
             if (configuration.GetValue<bool>("Generation:AllowDuplicates")) break;
         }
         while (!IsHashValid(mintedHash));
 
-        toMerge.ForEach(a => a.UsedAmount++);
+        toMerge.ForEach(a => a.Asset.UsedAmount++);
 
         if (toMerge.Count < 2)
         {
@@ -75,15 +73,15 @@ internal class Generator : IGenerator
         Media.ComposePNG(resPath, logger, assets.ToArray());
 
         float generationProbability = 1F;
-        generationProbability *= toMerge[0].Metadata.Amount / (float)serieCount;
-        generationProbability *= toMerge[1].Metadata.Amount / (float)serieCount;
-        meta.AddAttributes(toMerge[0].Metadata.Attributes);
-        meta.AddAttributes(toMerge[1].Metadata.Attributes);
+        generationProbability *= toMerge[0].Asset.Metadata.Amount / (float)serieCount;
+        generationProbability *= toMerge[1].Asset.Metadata.Amount / (float)serieCount;
+        meta.AddAttributes(toMerge[0].Asset.Metadata.Attributes);
+        meta.AddAttributes(toMerge[1].Asset.Metadata.Attributes);
 
         for (var i = 2; i < toMerge.Count; i++)
         {
-            meta.AddAttributes(toMerge[i].Metadata.Attributes);
-            generationProbability *= toMerge[i].Metadata.Amount / (float)serieCount;
+            meta.AddAttributes(toMerge[i].Asset.Metadata.Attributes);
+            generationProbability *= toMerge[i].Asset.Metadata.Amount / (float)serieCount;
         }
         StringBuilder stringBuilder = new StringBuilder();
         foreach (int val in mintedHash)
@@ -93,6 +91,8 @@ internal class Generator : IGenerator
         string report = stringBuilder.ToString();
         Serializer.WriteAll($"{Paths.RESULTS}\\rarities\\", $"{index}.rarity", $"Probability: {generationProbability}\nHash: {stringBuilder}");
 
+        meta.Name += $"#{index}";
+
         Serializer.SerializeJson($"{Paths.RESULTS}\\", $"{index}.json", meta);
         lock (generatedHashes)
         {
@@ -100,13 +100,17 @@ internal class Generator : IGenerator
         }
     }
 
-    private List<IMediaProvider> CheckIncompatibles(List<Asset> assets, int genIndex)
+    private List<IMediaProvider> CheckIncompatibles(List<LayerPick> assets, int genIndex)
     {
         foreach (var fallbackDef in filesystem.FallbackMetadata.GetFallbacksByPriority())
         {
-            if (fallbackDef.CheckIncompatibleHit(assets, out int firstHit, out List<int> toRemove))
+            if (fallbackDef.HasInstructionsHit(assets, out int firstHit, out List<LayerPick> toRemove))
             {
                 //logger.LogWarning($"Found incompatible, hash:");
+                //foreach (AssetPick a in assets)
+                //{
+                //    Logger.ConsoleInstance.LogInfo("L: " + a.Layer.Name + ", a: " + a.Asset.Id + " | ", false);
+                //}
                 //foreach (var asset in assets)
                 //{
                 //    logger.LogInfo($"{asset.Id} ", false);
@@ -118,18 +122,28 @@ internal class Generator : IGenerator
                 //}
 
                 List<IMediaProvider> res = new List<IMediaProvider>();
-                for (int i = 0; i < assets.Count; i++)
+                foreach (var asset in assets)
                 {
-                    if (!toRemove.Contains(i))
+                    if (!toRemove.Contains(asset))
                     {
-                        res.Add(assets[i]);
+                        res.Add(asset.Asset);
                     }
                 }
-                res.Insert(firstHit, fallbackDef);
+                //for (int i = 0; i < assets.Count; i++)
+                //{
+                //    if (toRemove.Find(a => a.Id.Equals(i)) == null)
+                //    {
+                //        res.Add(assets[i].Asset);
+                //    }
+                //}
+                if (fallbackDef.FallbackAction == Incompatible.Action.ReplaceAll)
+                {
+                    res.Insert(firstHit, fallbackDef);
+                }
                 return res;
             }
         }
-        return new List<IMediaProvider>(assets);
+        return assets.ConvertAll(a => (IMediaProvider)a.Asset);
     }
 
     private bool IsHashValid(IEnumerable<int> current)

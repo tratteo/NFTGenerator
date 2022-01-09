@@ -6,7 +6,7 @@ using NFTGenerator.Metadata;
 using NFTGenerator.Source;
 using System.IO;
 
-namespace NFTGenerator.Models;
+namespace NFTGenerator.Objects;
 
 internal class Asset : IMediaProvider, IIdOwner
 {

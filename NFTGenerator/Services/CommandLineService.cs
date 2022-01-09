@@ -2,7 +2,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using nQuant;
 using System;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -12,14 +15,14 @@ public class CommandLineService : ICoreRunner
 {
     private readonly IServiceProvider services;
 
-    private readonly ILogger<CommandLineService> logger;
+    private readonly ILogger logger;
 
     public CommandLine Cli { get; private set; }
 
-    public CommandLineService(IServiceProvider services, ILogger<CommandLineService> logger, IConfiguration configuration)
+    public CommandLineService(IServiceProvider services, ILoggerFactory loggerFactory, IConfiguration configuration)
     {
         this.services = services;
-        this.logger = logger;
+        this.logger = loggerFactory.CreateLogger("CLI");
         BuildCli();
     }
 
@@ -73,6 +76,27 @@ public class CommandLineService : ICoreRunner
             {
                 if (!filesystem.Verify()) return;
                 Cli.Logger.LogInfo($"The current filesystem can yield up to {filesystem.CalculateDispositions()} dispositions");
+            }));
+
+        Cli.Register(Command.Factory("compress")
+            .ArgumentsHandler(ArgumentsHandler.Factory())
+            .AddAsync(async (handler) =>
+            {
+                //ImageOptimizer optimizer = new ImageOptimizer();
+                //var info = new FileInfo(@"C:\Users\matteo\Desktop\Cloudies\test.png");
+                //optimizer.OptimalCompression = true;
+                //optimizer.LosslessCompress(info);
+                //info.Refresh();
+                ////TODO compress
+                var quantizer = new WuQuantizer();
+                using var bitmap = new Bitmap(@"C:\Users\matteo\Desktop\Cloudies\ksiCloudy.png");
+                using var quantized = quantizer.QuantizeImage(bitmap);
+                quantized.Save(@"C:\Users\matteo\Desktop\Cloudies\test1.png", ImageFormat.Png);
+                //using (MagickImage image = new MagickImage(@"C:\Users\matteo\Desktop\Cloudies\ksiCloudy.png"))
+                //{
+                //    image.Quality = int.MaxValue; // This is the Compression level.
+                //    image.Write(@"C:\Users\matteo\Desktop\Cloudies\test1.png");
+                //}
             }));
 
         Cli.Register(Command.Factory("scale-serie")

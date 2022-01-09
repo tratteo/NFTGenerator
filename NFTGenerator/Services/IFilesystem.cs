@@ -1,7 +1,7 @@
 ﻿// Copyright Matteo Beltrame
 
 using NFTGenerator.Metadata;
-using NFTGenerator.Models;
+using NFTGenerator.Objects;
 using System.Collections.Generic;
 
 namespace NFTGenerator.Services;
