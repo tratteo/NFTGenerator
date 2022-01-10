@@ -107,6 +107,7 @@ internal class Filesystem : IFilesystem
                 }
                 fileExtension = info.Extension;
             }
+            //layer.SetAssetsPickProbabilities();
             if (layer.Assets.Count > 0)
             {
                 Layers.Add(layer);

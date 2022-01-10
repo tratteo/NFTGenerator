@@ -28,10 +28,10 @@
 
   <ItemGroup>
     <None Update="appsettings.Production.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="appsettings.Development.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="blueprint.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

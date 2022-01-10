@@ -1,6 +1,7 @@
 ﻿// Copyright Matteo Beltrame
 
 using HandierCli;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace NFTGenerator.Metadata;
@@ -14,17 +15,17 @@ internal class CollectionMetadata
     [JsonProperty("family")]
     public string Family { get; set; }
 
-    public bool Valid()
+    public bool Valid(ILogger logger)
     {
         var valid = true;
         if (Name.Equals(string.Empty))
         {
-            Logger.ConsoleInstance.LogError("[Collection] Name is empty");
+            logger.LogError("[Collection] Name is empty");
             valid = false;
         }
         if (Family.Equals(string.Empty))
         {
-            Logger.ConsoleInstance.LogError("[Colleciton] Family is empty");
+            logger.LogError("[Collection] Family is empty");
             valid = false;
         }
         return valid;

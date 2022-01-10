@@ -32,7 +32,7 @@ public class CommandLineService : ICoreRunner
     {
         IFilesystem filesystem = services.GetService<IFilesystem>();
 
-        Cli = CommandLine.Factory().ExitOn("exit", "quit").OnUnrecognized((cmd) => Logger.ConsoleInstance.LogError($"{cmd} not recognized")).Build();
+        Cli = CommandLine.Factory().ExitOn("exit", "quit").OnUnrecognized((cmd) => logger.LogError($"{cmd} not recognized")).Build();
         Command PURGE = Command.Factory("purge")
         .Description("verify a certain path")
         .ArgumentsHandler(ArgumentsHandler.Factory().Positional("path to purge").Flag("/f", "skip confirmation"))
@@ -78,25 +78,23 @@ public class CommandLineService : ICoreRunner
                 Cli.Logger.LogInfo($"The current filesystem can yield up to {filesystem.CalculateDispositions()} dispositions");
             }));
 
-        Cli.Register(Command.Factory("compress")
-            .ArgumentsHandler(ArgumentsHandler.Factory())
+        Cli.Register(Command.Factory("filter")
+            .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file").Positional("output"))
             .AddAsync(async (handler) =>
             {
-                //ImageOptimizer optimizer = new ImageOptimizer();
-                //var info = new FileInfo(@"C:\Users\matteo\Desktop\Cloudies\test.png");
-                //optimizer.OptimalCompression = true;
-                //optimizer.LosslessCompress(info);
-                //info.Refresh();
-                ////TODO compress
+                using Bitmap bitmap = new Bitmap(handler.GetPositional(0));
+                Media.ApplyVideoDegradationFilter(bitmap);
+                bitmap.Save(handler.GetPositional(1));
+            }));
+
+        Cli.Register(Command.Factory("compress")
+            .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file").Positional("output"))
+            .AddAsync(async (handler) =>
+            {
                 var quantizer = new WuQuantizer();
-                using var bitmap = new Bitmap(@"C:\Users\matteo\Desktop\Cloudies\ksiCloudy.png");
+                using var bitmap = new Bitmap(handler.GetPositional(0));
                 using var quantized = quantizer.QuantizeImage(bitmap);
-                quantized.Save(@"C:\Users\matteo\Desktop\Cloudies\test1.png", ImageFormat.Png);
-                //using (MagickImage image = new MagickImage(@"C:\Users\matteo\Desktop\Cloudies\ksiCloudy.png"))
-                //{
-                //    image.Quality = int.MaxValue; // This is the Compression level.
-                //    image.Write(@"C:\Users\matteo\Desktop\Cloudies\test1.png");
-                //}
+                quantized.Save(handler.GetPositional(1), ImageFormat.Png);
             }));
 
         Cli.Register(Command.Factory("scale-serie")

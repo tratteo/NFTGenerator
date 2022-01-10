@@ -1,6 +1,7 @@
 ﻿// Copyright Matteo Beltrame
 
 using HandierCli;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace NFTGenerator.Metadata;
@@ -14,16 +15,16 @@ internal class CreatorMetadata
     [JsonProperty("share")]
     public int Share { get; set; }
 
-    public bool Valid()
+    public bool Valid(ILogger logger)
     {
         if (Address.Equals(string.Empty))
         {
-            Logger.ConsoleInstance.LogError("Creator Address is empty");
+            logger.LogError("Creator Address is empty");
             return false;
         }
         if (Share <= 0)
         {
-            Logger.ConsoleInstance.LogError("Creator Share is set to " + Share);
+            logger.LogError("Creator Share is set to " + Share);
             return false;
         }
         return true;

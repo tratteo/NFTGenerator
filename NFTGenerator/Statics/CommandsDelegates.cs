@@ -9,6 +9,7 @@ using NFTGenerator.Metadata;
 using NFTGenerator.Objects;
 using NFTGenerator.Services;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -251,8 +252,12 @@ internal static class CommandsDelegates
                 Stopwatch watch = Stopwatch.StartNew();
                 logger.LogInformation("Parallelizing work...");
                 watch.Restart();
-                Parallel.ForEach(Enumerable.Range(0, amountToMint), new ParallelOptions() { MaxDegreeOfParallelism = 16 }, (i, token) => generator.GenerateSingle(i, generationProgressReporter));
+                Parallel.ForEach(Enumerable.Range(0, amountToMint), new ParallelOptions() { MaxDegreeOfParallelism = 32 }, (i, token) =>
+                {
+                    string res = generator.GenerateSingle(i, generationProgressReporter);
+                });
                 watch.Stop();
+
                 await Task.Delay(250);
                 ConsoleExtensions.ClearConsoleLine();
                 logger.LogInformation($"Completed in {watch.ElapsedMilliseconds / 1000F:0.000} s", ConsoleColor.Green);

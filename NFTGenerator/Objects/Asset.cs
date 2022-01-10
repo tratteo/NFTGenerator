@@ -3,12 +3,11 @@
 using BetterHaveIt;
 using Microsoft.Extensions.Logging;
 using NFTGenerator.Metadata;
-using NFTGenerator.Source;
 using System.IO;
 
 namespace NFTGenerator.Objects;
 
-internal class Asset : IMediaProvider, IIdOwner
+internal class Asset : IMediaProvider
 {
     public int Id { get; private set; }
 
@@ -17,6 +16,8 @@ internal class Asset : IMediaProvider, IIdOwner
     public string AssetAbsolutePath { get; private set; }
 
     public int UsedAmount { get; set; } = 0;
+
+    public double PickProbability { get; set; }
 
     private Asset()
     {
@@ -69,6 +70,7 @@ internal class Asset : IMediaProvider, IIdOwner
             asset.Metadata = assetMetadata;
         }
         asset.AssetAbsolutePath = assetPath;
+
         return true;
     }
 

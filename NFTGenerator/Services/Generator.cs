@@ -32,7 +32,7 @@ internal class Generator : IGenerator
         nftMetadataBlueprint = NFTMetadata.Template();
     }
 
-    public void GenerateSingle(int index, IProgress<int> progress = null)
+    public string GenerateSingle(int index, IProgress<int> progress = null)
     {
         int serieCount = configuration.GetValue<int>("Generation:SerieCount");
         NFTMetadata meta = nftMetadataBlueprint.Clone();
@@ -60,12 +60,17 @@ internal class Generator : IGenerator
         }
         while (!IsHashValid(mintedHash));
 
-        toMerge.ForEach(a => a.Asset.UsedAmount++);
+        toMerge.ForEach(a =>
+        {
+            a.Asset.UsedAmount++;
+            if (a.Asset.UsedAmount >= a.Asset.Metadata.Amount)
+                a.Asset.PickProbability = 0F;
+        });
 
         if (toMerge.Count < 2)
         {
             logger.LogError("Unable to merge less than 2 assets!");
-            return;
+            return string.Empty;
         }
 
         List<IMediaProvider> assets = CheckIncompatibles(toMerge, index);
@@ -98,6 +103,7 @@ internal class Generator : IGenerator
         {
             generatedHashes.Add(mintedHash);
         }
+        return $"{index}.json";
     }
 
     private List<IMediaProvider> CheckIncompatibles(List<LayerPick> assets, int genIndex)

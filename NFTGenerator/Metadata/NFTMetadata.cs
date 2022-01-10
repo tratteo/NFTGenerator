@@ -74,11 +74,11 @@ internal class NFTMetadata
         {
             logger.LogWarning("Field ExternalUrl is empty");
         }
-        if (!Collection.Valid())
+        if (!Collection.Valid(logger))
         {
             valid = false;
         }
-        if (!Properties.Valid())
+        if (!Properties.Valid(logger))
         {
             valid = false;
         }

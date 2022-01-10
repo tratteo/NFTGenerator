@@ -3,6 +3,7 @@
 using BetterHaveIt;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NFTGenerator.Objects;
 
@@ -30,9 +31,23 @@ internal class Layer
     public Asset GetRandom()
     {
         List<Asset> match = Assets.FindAll((a) => a.UsedAmount < a.Metadata.Amount);
-        return match.Count <= 0
-            ? throw new System.Exception("Wrong error number in layer: " + Path + ", this should never happen")
-            : match[random.Next(0, match.Count)];
+        int sum = 0;
+        foreach (Asset asset in match)
+        {
+            sum += asset.Metadata.Amount;
+        }
+        foreach (Asset asset in match)
+        {
+            asset.PickProbability = (double)asset.Metadata.Amount / sum;
+        }
+        int index = -1;
+        double r = random.NextDouble();
+        while (r > 0)
+        {
+            r -= match[++index].PickProbability;
+        }
+
+        return match[index];
     }
 
     public bool HasMintableAssets() => Assets.FindAll((a) => a.UsedAmount < a.Metadata.Amount).Count > 0;
