@@ -60,20 +60,17 @@ internal class Generator : IGenerator
         }
         while (!IsHashValid(mintedHash));
 
-        toMerge.ForEach(a =>
-        {
-            a.Asset.UsedAmount++;
-            if (a.Asset.UsedAmount >= a.Asset.Metadata.Amount)
-                a.Asset.PickProbability = 0F;
-        });
-
         if (toMerge.Count < 2)
         {
             logger.LogError("Unable to merge less than 2 assets!");
             return string.Empty;
         }
+        for (int i = 0; i < toMerge.Count; i++)
+        {
+            toMerge[i].Asset.UsedAmount++;
+        }
 
-        List<IMediaProvider> assets = CheckIncompatibles(toMerge, index);
+        List<IMediaProvider> assets = HandleIncompatibles(toMerge);
         progress?.Report(1);
         Media.ComposePNG(resPath, logger, assets.ToArray());
 
@@ -88,68 +85,48 @@ internal class Generator : IGenerator
             meta.AddAttributes(toMerge[i].Asset.Metadata.Attributes);
             generationProbability *= toMerge[i].Asset.Metadata.Amount / (float)serieCount;
         }
-        StringBuilder stringBuilder = new StringBuilder();
-        foreach (int val in mintedHash)
+        if (configuration.GetValue<bool>("Generation:GenerateRarities"))
         {
-            stringBuilder.Append($"{val} ");
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (int val in mintedHash)
+            {
+                stringBuilder.Append($"{val} ");
+            }
+            string report = stringBuilder.ToString();
+            Serializer.WriteAll($"{Paths.RESULTS}\\rarities\\", $"{index}.rarity", $"Probability: {generationProbability}\nHash: {stringBuilder}");
         }
-        string report = stringBuilder.ToString();
-        Serializer.WriteAll($"{Paths.RESULTS}\\rarities\\", $"{index}.rarity", $"Probability: {generationProbability}\nHash: {stringBuilder}");
 
         meta.Name += $"#{index}";
 
         Serializer.SerializeJson($"{Paths.RESULTS}\\", $"{index}.json", meta);
-        lock (generatedHashes)
-        {
-            generatedHashes.Add(mintedHash);
-        }
+        generatedHashes.Add(mintedHash);
         return $"{index}.json";
     }
 
-    private List<IMediaProvider> CheckIncompatibles(List<LayerPick> assets, int genIndex)
+    private List<IMediaProvider> HandleIncompatibles(List<LayerPick> assets)
     {
+        List<LayerPick> picks = new List<LayerPick>(assets);
+        List<(int, IMediaProvider)> incompatibles = new List<(int, IMediaProvider)>();
         foreach (var fallbackDef in filesystem.FallbackMetadata.GetFallbacksByPriority())
         {
             if (fallbackDef.HasInstructionsHit(assets, out int firstHit, out List<LayerPick> toRemove))
             {
-                //logger.LogWarning($"Found incompatible, hash:");
-                //foreach (AssetPick a in assets)
-                //{
-                //    Logger.ConsoleInstance.LogInfo("L: " + a.Layer.Name + ", a: " + a.Asset.Id + " | ", false);
-                //}
-                //foreach (var asset in assets)
-                //{
-                //    logger.LogInfo($"{asset.Id} ", false);
-                //}
-                //logger.LogWarning($"\nShould remove indexes:");
-                //foreach (var index in toRemove)
-                //{
-                //    logger.LogInfo($"{index} ", false);
-                //}
-
-                List<IMediaProvider> res = new List<IMediaProvider>();
-                foreach (var asset in assets)
+                foreach (var rem in toRemove)
                 {
-                    if (!toRemove.Contains(asset))
-                    {
-                        res.Add(asset.Asset);
-                    }
+                    picks.Remove(rem);
                 }
-                //for (int i = 0; i < assets.Count; i++)
-                //{
-                //    if (toRemove.Find(a => a.Id.Equals(i)) == null)
-                //    {
-                //        res.Add(assets[i].Asset);
-                //    }
-                //}
                 if (fallbackDef.FallbackAction == Incompatible.Action.ReplaceAll)
                 {
-                    res.Insert(firstHit, fallbackDef);
+                    incompatibles.Add((firstHit, fallbackDef));
                 }
-                return res;
             }
         }
-        return assets.ConvertAll(a => (IMediaProvider)a.Asset);
+        List<IMediaProvider> res = picks.ConvertAll(a => (IMediaProvider)a.Asset);
+        foreach (var pair in incompatibles)
+        {
+            res.Insert(pair.Item1, pair.Item2);
+        }
+        return res;
     }
 
     private bool IsHashValid(IEnumerable<int> current)

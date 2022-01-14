@@ -51,7 +51,8 @@ public class CommandLineService : ICoreRunner
                 for (int i = 0; i < files.Length; i++)
                 {
                     FileInfo fileInfo = new FileInfo(files[i]);
-                    fileInfo.MoveTo($"{fileInfo.Directory.FullName}\\{i}{fileInfo.Extension}");
+
+                    fileInfo.MoveTo($"{fileInfo.Directory.FullName}\\{i}{fileInfo.Extension}", true);
                 }
             }));
 

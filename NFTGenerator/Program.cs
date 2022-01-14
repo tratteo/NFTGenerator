@@ -4,13 +4,14 @@ using HandierCli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using NFTGenerator.Services;
 using System;
 using System.IO;
 
 Console.Title = "NFT Generator";
-Logger.ConsoleInstance.LogInfo("----- NFT GENERATOR -----\n\n", ConsoleColor.DarkCyan);
 
+if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == null) Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Production");
 var host = Host.CreateDefaultBuilder()
     .ConfigureAppConfiguration((config) =>
         config.SetBasePath(Directory.GetCurrentDirectory())
@@ -21,11 +22,18 @@ var host = Host.CreateDefaultBuilder()
     {
         services.AddTransient<IGenerator, Generator>();
         services.AddSingleton<IFilesystem, Filesystem>();
-        services.AddSingleton<CommandLineService>();
+        services.AddSingleton<ICoreRunner, CommandLineService>();
     })
     .Build();
 
-var core = host.Services.GetService<CommandLineService>();
+Logger.ConsoleInstance.LogInfo("----- NFT GENERATOR -----\n\n", ConsoleColor.DarkCyan);
+var loggerFactory = host.Services.GetService<ILoggerFactory>();
+if (loggerFactory != null)
+{
+    var logger = loggerFactory.CreateLogger("Bootstrap");
+    logger.LogInformation("Running with env {env}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
+}
+var core = host.Services.GetService<ICoreRunner>();
 if (core != null)
 {
     await core.Run();

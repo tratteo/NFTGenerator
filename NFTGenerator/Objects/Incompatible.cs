@@ -50,7 +50,7 @@ internal class Incompatible : IMediaProvider
                 return false;
             }
         }
-        return firstIndex >= 0;
+        return firstIndex > 0;
     }
 
     public string ProvideMediaPath() => $"{Paths.FALLBACKS}\\{MediaName}";
