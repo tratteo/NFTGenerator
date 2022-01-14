@@ -2,6 +2,7 @@
 
 using BetterHaveIt;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using NFTGenerator.Metadata;
 using System.IO;
 
@@ -65,7 +66,7 @@ internal class Asset : IMediaProvider
             return false;
         }
 
-        if (Serializer.DeserializeJson<AssetMetadata>(string.Empty, metadataPath, out var assetMetadata))
+        if (Serializer.DeserializeJson(string.Empty, metadataPath, out AssetMetadata assetMetadata))
         {
             asset.Metadata = assetMetadata;
         }

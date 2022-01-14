@@ -18,17 +18,21 @@
 
   <ItemGroup>
     <None Remove="appsettings.Development.json" />
+    <None Remove="appsettings.Production.json" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="appsettings.Development.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="appsettings.Production.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
 
   <ItemGroup>
-    <PackageReference Include="BetterHaveIt" Version="1.0.3" />
+    <PackageReference Include="BetterHaveIt" Version="1.0.6" />
     <PackageReference Include="HandierCli" Version="1.0.1" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="8.5.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0" />
@@ -38,9 +42,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="appsettings.Production.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="blueprint.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

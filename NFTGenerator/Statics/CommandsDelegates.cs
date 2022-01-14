@@ -235,32 +235,9 @@ internal static class CommandsDelegates
             }
             else
             {
-                int currentCount = 0;
-                Stopwatch reportWatch = Stopwatch.StartNew();
-                long lastReport = 0;
-                Progress<int> generationProgressReporter = new Progress<int>((p) =>
-                {
-                    currentCount++;
-                    long currentElapsed = reportWatch.ElapsedMilliseconds;
-                    if (currentElapsed - lastReport > 250)
-                    {
-                        lastReport = currentElapsed;
-                        ConsoleExtensions.ClearConsoleLine();
-                        logger.LogInformation($"{currentCount / (float)amountToMint * 100F:0} %", false);
-                    }
-                });
-                Stopwatch watch = Stopwatch.StartNew();
-                logger.LogInformation("Parallelizing work...");
-                watch.Restart();
-                Parallel.ForEach(Enumerable.Range(0, amountToMint), new ParallelOptions() { MaxDegreeOfParallelism = 32 }, (i, token) =>
-                {
-                    string res = generator.GenerateSingle(i, generationProgressReporter);
-                });
-                watch.Stop();
-
+                generator.Generate();
                 await Task.Delay(250);
                 ConsoleExtensions.ClearConsoleLine();
-                logger.LogInformation($"Completed in {watch.ElapsedMilliseconds / 1000F:0.000} s", ConsoleColor.Green);
             }
         }
     }

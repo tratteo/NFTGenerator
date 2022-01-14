@@ -1,6 +1,7 @@
 ﻿// Copyright Matteo Beltrame
 
 using BetterHaveIt;
+using HandierCli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -8,8 +9,10 @@ using NFTGenerator.Metadata;
 using NFTGenerator.Objects;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace NFTGenerator.Services;
 
@@ -25,16 +28,44 @@ internal class Generator : IGenerator
     public Generator(IServiceProvider services, ILoggerFactory loggerFactory)
     {
         this.services = services;
-        this.logger = loggerFactory.CreateLogger("Generator");
+        logger = loggerFactory.CreateLogger("Generator");
         filesystem = services.GetService<IFilesystem>();
         configuration = services.GetService<IConfiguration>();
         generatedHashes = new List<int[]>();
         nftMetadataBlueprint = NFTMetadata.Template();
     }
 
-    public string GenerateSingle(int index, IProgress<int> progress = null)
+    public void Generate()
     {
         int serieCount = configuration.GetValue<int>("Generation:SerieCount");
+        bool generateRarities = configuration.GetValue<bool>("Generation:GenerateRarities");
+        int currentCount = 0;
+        Stopwatch reportWatch = Stopwatch.StartNew();
+        long lastReport = 0;
+        Progress<int> generationProgressReporter = new Progress<int>((p) =>
+        {
+            currentCount++;
+            long currentElapsed = reportWatch.ElapsedMilliseconds;
+            if (currentElapsed - lastReport > 250)
+            {
+                lastReport = currentElapsed;
+                ConsoleExtensions.ClearConsoleLine();
+                logger.LogInformation("{current:0} %", currentCount / (float)serieCount * 100F);
+            }
+        });
+        Stopwatch watch = Stopwatch.StartNew();
+        logger.LogInformation("Parallelizing work...");
+        watch.Restart();
+        Parallel.ForEach(Enumerable.Range(0, serieCount), new ParallelOptions() { MaxDegreeOfParallelism = 30 }, (i, token) =>
+        {
+            string res = GenerateSingle(serieCount, generateRarities, i, generationProgressReporter);
+        });
+        watch.Stop();
+        logger.LogInformation("Completed in {elapsed:0.000} s", watch.ElapsedMilliseconds / 1000F);
+    }
+
+    private string GenerateSingle(int serieCount, bool generateRarities, int index, IProgress<int> progress = null)
+    {
         NFTMetadata meta = nftMetadataBlueprint.Clone();
         var mintedHash = new int[filesystem.Layers.Count];
         var resPath = $"{Paths.RESULTS}\\{index}.png";
@@ -85,7 +116,7 @@ internal class Generator : IGenerator
             meta.AddAttributes(toMerge[i].Asset.Metadata.Attributes);
             generationProbability *= toMerge[i].Asset.Metadata.Amount / (float)serieCount;
         }
-        if (configuration.GetValue<bool>("Generation:GenerateRarities"))
+        if (generateRarities)
         {
             StringBuilder stringBuilder = new StringBuilder();
             foreach (int val in mintedHash)
@@ -106,7 +137,7 @@ internal class Generator : IGenerator
     private List<IMediaProvider> HandleIncompatibles(List<LayerPick> assets)
     {
         List<LayerPick> picks = new List<LayerPick>(assets);
-        List<(int, IMediaProvider)> incompatibles = new List<(int, IMediaProvider)>();
+        List<(int index, IMediaProvider media)> incompatibles = new List<(int, IMediaProvider)>();
         foreach (var fallbackDef in filesystem.FallbackMetadata.GetFallbacksByPriority())
         {
             if (fallbackDef.HasInstructionsHit(assets, out int firstHit, out List<LayerPick> toRemove))
@@ -122,9 +153,9 @@ internal class Generator : IGenerator
             }
         }
         List<IMediaProvider> res = picks.ConvertAll(a => (IMediaProvider)a.Asset);
-        foreach (var pair in incompatibles)
+        foreach (var (index, media) in incompatibles)
         {
-            res.Insert(pair.Item1, pair.Item2);
+            res.Insert(index, media);
         }
         return res;
     }

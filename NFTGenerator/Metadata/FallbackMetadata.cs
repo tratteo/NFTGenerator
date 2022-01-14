@@ -13,6 +13,7 @@ internal partial class FallbackMetadata
 {
     [JsonProperty("incompatibles")]
     public List<Incompatible> fallbacks;
+
     private bool ordered = false;
 
     public FallbackMetadata()

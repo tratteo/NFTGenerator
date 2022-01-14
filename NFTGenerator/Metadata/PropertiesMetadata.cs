@@ -1,6 +1,5 @@
 ﻿// Copyright Matteo Beltrame
 
-using HandierCli;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;

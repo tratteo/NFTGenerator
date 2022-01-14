@@ -4,12 +4,15 @@ using BetterHaveIt;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using NFTGenerator.Metadata;
 using NFTGenerator.Objects;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace NFTGenerator.Services;
@@ -114,7 +117,7 @@ internal class Filesystem : IFilesystem
             }
             if (amount < serieAmount)
             {
-                errors.Add($"Wrong assets sum in layer: {layer.Name}");
+                errors.Add($"Wrong assets sum in layer: {layer.Name}: {amount}");
             }
             else if (amount > serieAmount)
             {
@@ -144,7 +147,7 @@ internal class Filesystem : IFilesystem
                 {
                     errors.Add("Errors in fallback metadata");
                 }
-                if (verbose) logger?.LogInformation($"Parsed {FallbackMetadata.GetFallbacksByPriority().Count} fallback definitions");
+                logger?.LogInformation($"Parsed {FallbackMetadata.GetFallbacksByPriority().Count} incompatibles definitions");
             }
             else
             {

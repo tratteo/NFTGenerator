@@ -3,6 +3,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace NFTGenerator.Objects;
 
@@ -26,6 +27,13 @@ internal class Incompatible : IMediaProvider
 
     [JsonProperty("instructions")]
     public List<Instruction> Instructions { get; init; }
+
+    public Incompatible()
+    {
+        Priority = 0;
+        FallbackAction = null;
+        Instructions = new List<Instruction>();
+    }
 
     public bool Verify() => FallbackAction != null && FallbackAction != Action.ReplaceAll || MediaName != null && MediaName != string.Empty;
 
