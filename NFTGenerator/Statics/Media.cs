@@ -42,7 +42,7 @@ internal static class Media
         stopwatch.Stop();
         // logger.LogInfo($"Merges bitmaps {stopwatch.ElapsedMilliseconds} ms", ConsoleColor.Magenta);
         stopwatch.Restart();
-        //ApplyVideoDegradationFilter(target);
+        ApplyVideoDegradationFilter(target);
         //var quantizer = new WuQuantizer();
         //using var quantized = quantizer.QuantizeImage(target);
         //quantized.Save(res, ImageFormat.Png);
