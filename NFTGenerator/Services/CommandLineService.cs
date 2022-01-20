@@ -1,9 +1,11 @@
-﻿using HandierCli;
+﻿using BetterHaveIt;
+using HandierCli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using nQuant;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -45,14 +47,21 @@ public class CommandLineService : ICoreRunner
             .ArgumentsHandler(ArgumentsHandler.Factory().Positional("path to folder").Keyed("-pm", "pattern matching string"))
             .AddAsync(async (handler) =>
             {
-                var files = handler.GetKeyed("-pm", out var pattern)
-                    ? Directory.GetFiles(handler.GetPositional(0), pattern)
-                    : Directory.GetFiles(handler.GetPositional(0));
-                for (int i = 0; i < files.Length; i++)
+                int counter = 0;
+                bool usingPattern = handler.GetKeyed("-pm", out var pattern);
+                var files = usingPattern ? Directory.GetFiles(handler.GetPositional(0), pattern) : Directory.GetFiles(handler.GetPositional(0));
+                var dirs = usingPattern ? Directory.GetDirectories(handler.GetPositional(0), pattern) : Directory.GetDirectories(handler.GetPositional(0));
+                for (int i = 0; i < dirs.Length; i++, counter++)
+                {
+                    DirectoryInfo directoryInfo = new DirectoryInfo(dirs[i]);
+                    (string path, string name) = PathExtensions.Split(directoryInfo.FullName);
+                    if (directoryInfo.Name.Equals($"{counter}")) continue;
+                    directoryInfo.MoveTo($"{path}\\{counter}");
+                }
+                for (int i = 0; i < files.Length; i++, counter++)
                 {
                     FileInfo fileInfo = new FileInfo(files[i]);
-
-                    fileInfo.MoveTo($"{fileInfo.Directory.FullName}\\{i}{fileInfo.Extension}", true);
+                    fileInfo.MoveTo($"{fileInfo.Directory.FullName}\\{counter}{fileInfo.Extension}", true);
                 }
             }));
 

@@ -84,7 +84,7 @@ internal class Filesystem : IFilesystem
         #endregion Create folders
 
         int assetsCount = 0;
-        var fileExtension = string.Empty;
+
         var layerNames = Directory.GetDirectories($"{Paths.LAYERS}");
         for (var i = 0; i < layerNames.Length; i++)
         {
@@ -102,13 +102,6 @@ internal class Filesystem : IFilesystem
                 layer.Assets.Add(asset);
                 //logger.LogInfo($"Asset {j} | id: {asset.Id}");
                 amount += asset.Metadata.Amount;
-                FileInfo info = new(asset.AssetAbsolutePath);
-
-                if (info.Extension != fileExtension && fileExtension != string.Empty)
-                {
-                    errors.Add($"Assets are not of the same type at: {asset.AssetAbsolutePath}");
-                }
-                fileExtension = info.Extension;
             }
             //layer.SetAssetsPickProbabilities();
             if (layer.Assets.Count > 0)
