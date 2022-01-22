@@ -1,13 +1,10 @@
 ﻿// Copyright Matteo Beltrame
 
 using Microsoft.Extensions.Logging;
-using nQuant;
 using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace NFTGenerator;
 
@@ -20,8 +17,9 @@ internal static class Media
         Bitmap[] maps = new Bitmap[mediaProvider.Length];
         for (int i = 0; i < maps.Length; i++)
         {
+            string path = mediaProvider[i].ProvideMediaPath();
             //logger.LogInfo(mediaProvider[i].ProvideMediaPath());
-            maps[i] = new Bitmap(mediaProvider[i].ProvideMediaPath());
+            maps[i] = new Bitmap(path);
         }
         stopwatch.Stop();
         //logger.LogInfo($"Created bitmaps {stopwatch.ElapsedMilliseconds} ms", ConsoleColor.Magenta);

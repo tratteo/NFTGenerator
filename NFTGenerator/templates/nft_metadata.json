@@ -1,22 +1,23 @@
 {
-  "name": "Neon Clouds Collective ",
+  "name": "Neon Cloud ",
   "symbol": "NCC",
-  "description": "Chill out...",
+  "description": "The chillest community on the Solana Metaverse",
   "seller_fee_basis_points": 700,
   "image": "image.png",
-  "animation_url": "",
-  "external_url": "",
   "attributes": [
   ],
   "properties": {
     "files": [
     ],
-    "category": "image",
     "creators": [
       {
-        "address": "",
+        "address": "FpF3CjcNbPuapPs7jUg9f21ffkyH6MubBR6uXA4TVANt",
         "share": 100
       }
     ]
+  },
+  "collection": {
+    "name": "Neon Clouds Collective",
+    "family": "Chill out..."
   }
 }

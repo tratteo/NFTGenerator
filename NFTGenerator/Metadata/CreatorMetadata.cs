@@ -21,9 +21,9 @@ internal class CreatorMetadata
             logger.LogError("Creator Address is empty");
             return false;
         }
-        if (Share <= 0)
+        if (Share is <= 0 or > 100)
         {
-            logger.LogError("Creator Share is set to " + Share);
+            logger.LogError("Creator Share is set to {val}", Share);
             return false;
         }
         return true;

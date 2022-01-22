@@ -12,8 +12,6 @@ internal class PropertiesMetadata
     [JsonProperty("files")]
     public List<FileMetadata> Files { get; set; }
 
-    [JsonProperty("category")]
-    public string Category { get; set; }
 
     [JsonProperty("creators")]
     public List<CreatorMetadata> Creators { get; set; }
@@ -21,11 +19,6 @@ internal class PropertiesMetadata
     public bool Valid(ILogger logger)
     {
         var valid = true;
-        if (Category.Equals(string.Empty))
-        {
-            logger.LogError("[Properties] Category is empty");
-            valid = false;
-        }
         if (Creators == null || Creators.Count <= 0)
         {
             logger.LogError("[Properties]: there are no creators");

@@ -101,7 +101,7 @@ internal class Generator : IGenerator
             toMerge[i].Asset.UsedAmount++;
         }
 
-        List<IMediaProvider> assets = HandleIncompatibles(toMerge);
+        List<IMediaProvider> assets = filesystem.FallbackMetadata.BuildMediaProviders(toMerge);
         progress?.Report(1);
         Media.ComposePNG(resPath, logger, assets.ToArray());
 
@@ -128,36 +128,12 @@ internal class Generator : IGenerator
         }
 
         meta.Name += $"#{index}";
+        meta.Image = $"{index}.png";
+        meta.Properties.Files = new List<FileMetadata>() { new FileMetadata() { Uri = meta.Image, Type = "image/png" } };
 
         Serializer.SerializeJson($"{Paths.RESULTS}\\", $"{index}.json", meta);
         generatedHashes.Add(mintedHash);
         return $"{index}.json";
-    }
-
-    private List<IMediaProvider> HandleIncompatibles(List<LayerPick> assets)
-    {
-        List<LayerPick> picks = new List<LayerPick>(assets);
-        List<(int index, IMediaProvider media)> incompatibles = new List<(int, IMediaProvider)>();
-        foreach (var fallbackDef in filesystem.FallbackMetadata.GetFallbacksByPriority())
-        {
-            if (fallbackDef.HasInstructionsHit(assets, out int firstHit, out List<LayerPick> toRemove))
-            {
-                foreach (var rem in toRemove)
-                {
-                    picks.Remove(rem);
-                }
-                if (fallbackDef.FallbackAction == Incompatible.Action.ReplaceAll)
-                {
-                    incompatibles.Add((firstHit, fallbackDef));
-                }
-            }
-        }
-        List<IMediaProvider> res = picks.ConvertAll(a => (IMediaProvider)a.Asset);
-        foreach (var (index, media) in incompatibles)
-        {
-            res.Insert(index, media);
-        }
-        return res;
     }
 
     private bool IsHashValid(IEnumerable<int> current)

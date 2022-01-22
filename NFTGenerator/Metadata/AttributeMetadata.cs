@@ -8,7 +8,7 @@ namespace NFTGenerator.Metadata;
 [Serializable]
 internal class AttributeMetadata : IEquatable<AttributeMetadata>
 {
-    [JsonProperty("trait")]
+    [JsonProperty("trait_type")]
     public string Trait { get; init; }
 
     [JsonProperty("value")]

@@ -1,5 +1,6 @@
 ﻿// Copyright Matteo Beltrame
 
+using HandierCli;
 using Newtonsoft.Json;
 using NFTGenerator.Objects;
 using System;
@@ -29,6 +30,26 @@ internal partial class FallbackMetadata
             ordered = true;
         }
         return fallbacks;
+    }
+
+    public List<IMediaProvider> BuildMediaProviders(List<LayerPick> picks)
+    {
+        List<(int index, IMediaProvider media)> incompatibles = new List<(int, IMediaProvider)>();
+        IMediaProvider[] medias = picks.ConvertAll(p => p.Asset as IMediaProvider).ToArray();
+        foreach (var fallbackDef in GetFallbacksByPriority())
+        {
+            fallbackDef.HandleIncompatible(picks, medias);
+        }
+
+        List<IMediaProvider> res = new List<IMediaProvider>();
+        for (int i = 0; i < medias.Length; i++)
+        {
+            if (medias[i] != null)
+            {
+                res.Add(medias[i]);
+            }
+        }
+        return res;
     }
 
     public bool Verify(int layersNumber)

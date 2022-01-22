@@ -12,6 +12,4 @@ internal class FileMetadata
     [JsonProperty("type")]
     public string Type { get; set; }
 
-    [JsonProperty("cdn")]
-    public bool Cdn { get; set; }
 }

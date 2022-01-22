@@ -27,20 +27,14 @@ internal class NFTMetadata
     [JsonProperty("image")]
     public string Image { get; set; }
 
-    [JsonProperty("animation_url")]
-    public string AnimationUrl { get; set; }
-
-    [JsonProperty("external_url")]
-    public string ExternalUrl { get; set; }
-
     [JsonProperty("attributes")]
     public List<AttributeMetadata> Attributes { get; set; }
 
-    [JsonProperty("collection")]
-    public CollectionMetadata Collection { get; set; }
-
     [JsonProperty("properties")]
     public PropertiesMetadata Properties { get; set; }
+
+    [JsonProperty("collection")]
+    public CollectionMetadata Collection { get; set; }
 
     public static NFTMetadata Template() => Serializer.DeserializeJson<NFTMetadata>(Paths.TEMPLATES, TEMPLATE_NAME, out var metadata) ? metadata : null;
 
@@ -65,20 +59,11 @@ internal class NFTMetadata
         {
             logger.LogWarning("SellerFeeBasisPoints is set to 0, you don't want to earn anything from sales?");
         }
-        if (!Image.Equals("image.png"))
+        if (!Properties.Valid(logger))
         {
-            logger.LogError("Since Metaplex developers are weirdos, image field MUST be populated with <image.png>");
             valid = false;
-        }
-        if (ExternalUrl.Equals(string.Empty))
-        {
-            logger.LogWarning("Field ExternalUrl is empty");
         }
         if (!Collection.Valid(logger))
-        {
-            valid = false;
-        }
-        if (!Properties.Valid(logger))
         {
             valid = false;
         }
@@ -103,12 +88,10 @@ internal class NFTMetadata
             Name = Name,
             Symbol = Symbol,
             Description = Description,
+            Collection = Collection,
             SellerFeeBasisPoints = SellerFeeBasisPoints,
             Image = Image,
-            AnimationUrl = AnimationUrl,
-            ExternalUrl = ExternalUrl,
             Attributes = Attributes,
-            Collection = Collection,
             Properties = Properties
         };
     }
