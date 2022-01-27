@@ -91,7 +91,7 @@ internal class NFTMetadata
             Collection = Collection,
             SellerFeeBasisPoints = SellerFeeBasisPoints,
             Image = Image,
-            Attributes = Attributes,
+            Attributes = new List<AttributeMetadata>(Attributes),
             Properties = Properties
         };
     }

@@ -1,9 +1,4 @@
 {
   "amount": 1,
-  "attributes": [
-    {
-      "trait_type": "name1",
-      "value": "value1"
-    }
-  ]
+  "attribute": null
 }

@@ -13,7 +13,7 @@ namespace NFTGenerator.Objects;
 internal class Asset : IMediaProvider
 {
     private readonly Random random;
-    private List<string> assetsPaths;
+    private List<PooledAsset> assetsPaths;
 
     public int Id { get; private set; }
 
@@ -50,8 +50,11 @@ internal class Asset : IMediaProvider
         {
             asset.Metadata = assetMetadata;
         }
-
-        asset.assetsPaths = new List<string>();
+        if (asset.Metadata.Attribute is null)
+        {
+            asset.Metadata.Attribute = new AttributeMetadata();
+        }
+        asset.assetsPaths = new List<PooledAsset>();
         bool isPooled = Directory.Exists($"{resourceAbsolutePath}\\{id}");
         string assetsPaths = isPooled ? $"{resourceAbsolutePath}\\{id}" : resourceAbsolutePath;
         string searchPattern = isPooled ? "*.png" : $"{id}.png";
@@ -63,10 +66,38 @@ internal class Asset : IMediaProvider
             asset = null;
             return false;
         }
+        int elementsPerAsset = asset.Metadata.Amount / assets.Length;
+        int rest = asset.Metadata.Amount - (elementsPerAsset * assets.Length);
+        for (int i = 0; i < assets.Length; i++)
+        {
+            if (i == assets.Length - 1)
+            {
+                asset.assetsPaths.Add(new PooledAsset() { Path = assets[i], Amount = elementsPerAsset + rest });
+            }
+            else
+            {
+                asset.assetsPaths.Add(new PooledAsset() { Path = assets[i], Amount = elementsPerAsset });
+            }
+        }
 
-        asset.assetsPaths.AddRange(assets);
         return true;
     }
 
-    public string ProvideMediaPath() => assetsPaths[random.Next(0, assetsPaths.Count)];
+    public string ProvideMediaPath()
+    {
+        var list = assetsPaths.FindAll(p => p.UsedAmount < p.Amount);
+        if (list.Count <= 0) throw new Exception("Unable to find pooled assets");
+        var sel = list[random.Next(0, list.Count)];
+        sel.UsedAmount++;
+        return sel.Path;
+    }
+
+    private struct PooledAsset
+    {
+        public string Path { get; init; }
+
+        public int Amount { get; init; }
+
+        public int UsedAmount { get; set; }
+    }
 }

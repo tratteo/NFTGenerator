@@ -3,9 +3,8 @@ using HandierCli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using nQuant;
+using NFTGenerator.Metadata;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -79,6 +78,11 @@ public class CommandLineService : ICoreRunner
                 await CommandsDelegates.Generate(handler, services, logger);
             }));
 
+        Cli.Register(Command.Factory("query")
+            .Description("query a certain data from the generated results")
+            .ArgumentsHandler(ArgumentsHandler.Factory().Positional("match pattern").Flag("/p", "print the id of the matches"))
+            .AddAsync(async (handler) => await CommandsDelegates.QueryResults(handler, services, logger)));
+
         Cli.Register(Command.Factory("dispositions")
             .Description("calculate the currently available dispositions")
             .ArgumentsHandler(ArgumentsHandler.Factory())
@@ -97,15 +101,31 @@ public class CommandLineService : ICoreRunner
                 bitmap.Save(handler.GetPositional(1));
             }));
 
-        Cli.Register(Command.Factory("compress")
-            .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file").Positional("output"))
+        Cli.Register(Command.Factory("refactor")
+            .ArgumentsHandler(ArgumentsHandler.Factory().Positional("root folder"))
             .AddAsync(async (handler) =>
             {
-                var quantizer = new WuQuantizer();
-                using var bitmap = new Bitmap(handler.GetPositional(0));
-                using var quantized = quantizer.QuantizeImage(bitmap);
-                quantized.Save(handler.GetPositional(1), ImageFormat.Png);
+                string[] allfiles = Directory.GetFiles(handler.GetPositional(0), "*.json", SearchOption.AllDirectories);
+                foreach (string file in allfiles)
+                {
+                    if (Serializer.DeserializeJson<AssetMetadata>(string.Empty, file, out var meta))
+                    {
+                        var newMeta = new AssetMetadata()
+                        { Amount = meta.Amount };
+                        Serializer.SerializeJson(string.Empty, file, newMeta);
+                    }
+                }
             }));
+
+        //Cli.Register(Command.Factory("compress")
+        //    .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file").Positional("output"))
+        //    .AddAsync(async (handler) =>
+        //    {
+        //        var quantizer = new WuQuantizer();
+        //        using var bitmap = new Bitmap(handler.GetPositional(0));
+        //        using var quantized = quantizer.QuantizeImage(bitmap);
+        //        quantized.Save(handler.GetPositional(1), ImageFormat.Png);
+        //    }));
 
         Cli.Register(Command.Factory("scale-serie")
             .Description("scale the serie amount by an integer factor")

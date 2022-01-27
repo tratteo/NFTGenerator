@@ -12,6 +12,10 @@ internal interface IFilesystem
 
     public FallbackMetadata FallbackMetadata { get; }
 
+    public double MinRarity { get; }
+
+    public double MaxRarity { get; }
+
     public bool Verify();
 
     public float CalculateDispositions();

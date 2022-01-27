@@ -1,6 +1,8 @@
 ﻿// Copyright Matteo Beltrame
 
 using Newtonsoft.Json;
+using NFTGenerator.Metadata;
+using NFTGenerator.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,9 +34,16 @@ internal class Incompatible
         Instructions = new List<Instruction>();
     }
 
-    public bool Verify() => true;
+    public bool Verify(IFilesystem filesystem)
+    {
+        foreach (Instruction instruction in Instructions)
+        {
+            if (filesystem.Layers.Find(l => l.Name.Equals(instruction.LayerName)) is null) return false;
+        }
+        return true;
+    }
 
-    public void HandleIncompatible(List<LayerPick> picks, IMediaProvider[] sideEffectMedia)
+    public void HandleIncompatible(List<LayerPick> picks, IMediaProvider[] sideEffectMedia, ref double rarityScore, List<AttributeMetadata> attributes, ref int[] mintedHash)
     {
         if (Instructions.Count <= 0) return;
         foreach (Instruction instruction in Instructions)
@@ -57,7 +66,10 @@ internal class Incompatible
             {
                 if (instruction.InstructionAction == Instruction.Action.Remove)
                 {
+                    mintedHash[index] = -1;
                     sideEffectMedia[index] = null;
+                    //rarityScore *= pick.Asset.PickProbability;
+                    attributes.RemoveAll(a => a.Equals(pick.Asset.Metadata.Attribute));
                 }
                 else if (instruction.InstructionAction == Instruction.Action.Replace)
                 {
@@ -78,7 +90,8 @@ internal class Incompatible
             List<Instruction> sorted = Instructions.OrderBy(i => i.Order).ToList();
             for (int i = 0; i < sorted.Count; i++)
             {
-                sideEffectMedia[indexes[i]] = sorted[i];
+                LayerPick pick = picks.Find(p => p.Layer.Name.Equals(sorted[i].LayerName));
+                sideEffectMedia[indexes[i]] = pick.Asset;
             }
         }
         return;

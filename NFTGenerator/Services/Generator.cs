@@ -1,18 +1,19 @@
 ﻿// Copyright Matteo Beltrame
 
 using BetterHaveIt;
-using HandierCli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NFTGenerator.Metadata;
 using NFTGenerator.Objects;
+using NFTGenerator.Statics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using HandierCli;
 
 namespace NFTGenerator.Services;
 
@@ -22,8 +23,11 @@ internal class Generator : IGenerator
     private readonly IServiceProvider services;
     private readonly ILogger logger;
     private readonly NFTMetadata nftMetadataBlueprint;
-    private readonly List<int[]> generatedHashes;
     private readonly IConfiguration configuration;
+    private readonly bool verbose;
+    private readonly bool allowDuplicates;
+    private List<int[]> generatedHashes;
+    private List<RarityMetadata> rarities;
 
     public Generator(IServiceProvider services, ILoggerFactory loggerFactory)
     {
@@ -31,36 +35,51 @@ internal class Generator : IGenerator
         logger = loggerFactory.CreateLogger("Generator");
         filesystem = services.GetService<IFilesystem>();
         configuration = services.GetService<IConfiguration>();
-        generatedHashes = new List<int[]>();
         nftMetadataBlueprint = NFTMetadata.Template();
+        verbose = configuration.GetValue<bool>("Debug:Verbose");
+        allowDuplicates = configuration.GetValue<bool>("Generation:AllowDuplicates");
     }
 
     public void Generate()
     {
+        rarities = new List<RarityMetadata>();
+        generatedHashes = new List<int[]>();
         int serieCount = configuration.GetValue<int>("Generation:SerieCount");
         bool generateRarities = configuration.GetValue<bool>("Generation:GenerateRarities");
         int currentCount = 0;
         Stopwatch reportWatch = Stopwatch.StartNew();
         long lastReport = 0;
+        ConsoleProgressBar progressBar = new ConsoleProgressBar(50, "|/-\\", 8);
         Progress<int> generationProgressReporter = new Progress<int>((p) =>
         {
-            currentCount++;
+            Interlocked.Increment(ref currentCount);
             long currentElapsed = reportWatch.ElapsedMilliseconds;
-            if (currentElapsed - lastReport > 250)
+            if (currentElapsed - lastReport > 500)
             {
                 lastReport = currentElapsed;
-                ConsoleExtensions.ClearConsoleLine();
-                logger.LogInformation("{current:0} %", currentCount / (float)serieCount * 100F);
+                progressBar.Report(currentCount / (float)serieCount);
+                //logger.LogInformation("{current:0} %", currentCount / (float)serieCount * 100F);
             }
         });
         Stopwatch watch = Stopwatch.StartNew();
         logger.LogInformation("Parallelizing work...");
         watch.Restart();
-        Parallel.ForEach(Enumerable.Range(0, serieCount), new ParallelOptions() { MaxDegreeOfParallelism = 30 }, (i, token) =>
+        Parallel.ForEach(Enumerable.Range(0, serieCount), new ParallelOptions() { MaxDegreeOfParallelism = configuration.GetValue<int>("Generation:WorkersCount") }, (i, token) =>
         {
             string res = GenerateSingle(serieCount, generateRarities, i, generationProgressReporter);
         });
+        progressBar.Dispose();
+
+        double maxRarity = rarities.MaxBy(r => r.Rarity).Rarity;
+        double minRarity = rarities.MinBy(r => r.Rarity).Rarity;
+        double diff = maxRarity - minRarity;
+        foreach (var rarity in rarities)
+        {
+            rarity.Rarity = (float)(100F * (rarity.Rarity - minRarity) / diff);
+            Serializer.SerializeJson($"{Paths.RESULTS}rarities\\", $"{rarity.Id}-rarity.json", rarity);
+        }
         watch.Stop();
+
         logger.LogInformation("Completed in {elapsed:0.000} s", watch.ElapsedMilliseconds / 1000F);
     }
 
@@ -69,7 +88,8 @@ internal class Generator : IGenerator
         NFTMetadata meta = nftMetadataBlueprint.Clone();
         var mintedHash = new int[filesystem.Layers.Count];
         var resPath = $"{Paths.RESULTS}\\{index}.png";
-        List<LayerPick> toMerge = new List<LayerPick>();
+
+        var iterationPicks = new List<LayerPick>();
         int cycle = 0;
         do
         {
@@ -78,53 +98,50 @@ internal class Generator : IGenerator
                 //logger.LogWarning("Found duplicate, brute forcing again");
             }
             cycle++;
-            toMerge.Clear();
+            iterationPicks.Clear();
 
             for (var i = 0; i < filesystem.Layers.Count; i++)
             {
                 Asset pick = filesystem.Layers[i].GetRandom();
                 mintedHash[i] = pick.Id;
 
-                toMerge.Add(new LayerPick() { Asset = pick, Layer = filesystem.Layers[i] });
+                iterationPicks.Add(new LayerPick() { Asset = pick, Layer = filesystem.Layers[i] });
             }
-            if (configuration.GetValue<bool>("Generation:AllowDuplicates")) break;
+            if (allowDuplicates) break;
         }
         while (!IsHashValid(mintedHash));
 
-        if (toMerge.Count < 2)
+        if (iterationPicks.Count < 2)
         {
             logger.LogError("Unable to merge less than 2 assets!");
             return string.Empty;
         }
-        for (int i = 0; i < toMerge.Count; i++)
+        double rarityScore = 1F;
+        var attributes = new List<AttributeMetadata>();
+        for (int i = 0; i < iterationPicks.Count; i++)
         {
-            toMerge[i].Asset.UsedAmount++;
+            iterationPicks[i].Asset.UsedAmount++;
+            rarityScore /= iterationPicks[i].Asset.Metadata.Attribute.Rarity;
+            if (iterationPicks[i].Asset.Metadata.Attribute.Trait != string.Empty)
+            {
+                attributes.Add(iterationPicks[i].Asset.Metadata.Attribute);
+            }
         }
 
-        List<IMediaProvider> assets = filesystem.FallbackMetadata.BuildMediaProviders(toMerge);
+        List<IMediaProvider> assets = filesystem.FallbackMetadata.BuildMediaProviders(iterationPicks, ref rarityScore, attributes, ref mintedHash);
         progress?.Report(1);
         Media.ComposePNG(resPath, logger, assets.ToArray());
 
-        float generationProbability = 1F;
-        generationProbability *= toMerge[0].Asset.Metadata.Amount / (float)serieCount;
-        generationProbability *= toMerge[1].Asset.Metadata.Amount / (float)serieCount;
-        meta.AddAttributes(toMerge[0].Asset.Metadata.Attributes);
-        meta.AddAttributes(toMerge[1].Asset.Metadata.Attributes);
+        meta.AddAttributes(attributes);
 
-        for (var i = 2; i < toMerge.Count; i++)
-        {
-            meta.AddAttributes(toMerge[i].Asset.Metadata.Attributes);
-            generationProbability *= toMerge[i].Asset.Metadata.Amount / (float)serieCount;
-        }
+        rarityScore /= MathF.Pow(10F, filesystem.Layers.Count - 2);
+        //rarityScore = rarityScore.Remap(filesystem.MinRarity, filesystem.MaxRarity, 0F, 1_000_000_000);
         if (generateRarities)
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            foreach (int val in mintedHash)
+            lock (rarities)
             {
-                stringBuilder.Append($"{val} ");
+                rarities.Add(new RarityMetadata() { Id = index, Rarity = rarityScore, Hash = mintedHash });
             }
-            string report = stringBuilder.ToString();
-            Serializer.WriteAll($"{Paths.RESULTS}\\rarities\\", $"{index}.rarity", $"Probability: {generationProbability}\nHash: {stringBuilder}");
         }
 
         meta.Name += $"#{index}";
@@ -132,22 +149,34 @@ internal class Generator : IGenerator
         meta.Properties.Files = new List<FileMetadata>() { new FileMetadata() { Uri = meta.Image, Type = "image/png" } };
 
         Serializer.SerializeJson($"{Paths.RESULTS}\\", $"{index}.json", meta);
-        generatedHashes.Add(mintedHash);
+        lock (generatedHashes)
+        {
+            generatedHashes.Add(mintedHash);
+        }
         return $"{index}.json";
     }
 
     private bool IsHashValid(IEnumerable<int> current)
     {
-        return generatedHashes.FindAll((h) =>
+        lock (generatedHashes)
         {
-            for (var i = 0; i < current.Count(); i++)
+            foreach (int[] hash in generatedHashes)
             {
-                if (current.ElementAt(i) != h[i])
+                bool valid = false;
+                for (var i = 0; i < current.Count(); i++)
+                {
+                    if (current.ElementAt(i) != hash[i])
+                    {
+                        valid = true;
+                        break;
+                    }
+                }
+                if (!valid)
                 {
                     return false;
                 }
             }
             return true;
-        }).Count <= 0;
+        }
     }
 }

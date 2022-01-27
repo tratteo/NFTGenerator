@@ -3,6 +3,7 @@
 using HandierCli;
 using Newtonsoft.Json;
 using NFTGenerator.Objects;
+using NFTGenerator.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,32 +14,31 @@ namespace NFTGenerator.Metadata;
 internal partial class FallbackMetadata
 {
     [JsonProperty("incompatibles")]
-    public List<Incompatible> fallbacks;
+    public List<Incompatible> incompatibles;
 
     private bool ordered = false;
 
     public FallbackMetadata()
     {
-        fallbacks = new List<Incompatible>();
+        incompatibles = new List<Incompatible>();
     }
 
     public List<Incompatible> GetFallbacksByPriority()
     {
         if (!ordered)
         {
-            fallbacks = fallbacks.OrderByDescending(f => f.Priority).ToList();
+            incompatibles = incompatibles.OrderByDescending(f => f.Priority).ToList();
             ordered = true;
         }
-        return fallbacks;
+        return incompatibles;
     }
 
-    public List<IMediaProvider> BuildMediaProviders(List<LayerPick> picks)
+    public List<IMediaProvider> BuildMediaProviders(List<LayerPick> picks, ref double rarityScore, List<AttributeMetadata> attributes, ref int[] mintedHash)
     {
-        List<(int index, IMediaProvider media)> incompatibles = new List<(int, IMediaProvider)>();
         IMediaProvider[] medias = picks.ConvertAll(p => p.Asset as IMediaProvider).ToArray();
         foreach (var fallbackDef in GetFallbacksByPriority())
         {
-            fallbackDef.HandleIncompatible(picks, medias);
+            fallbackDef.HandleIncompatible(picks, medias, ref rarityScore, attributes, ref mintedHash);
         }
 
         List<IMediaProvider> res = new List<IMediaProvider>();
@@ -52,11 +52,11 @@ internal partial class FallbackMetadata
         return res;
     }
 
-    public bool Verify(int layersNumber)
+    public bool Verify(IFilesystem filesystem)
     {
-        foreach (var fallback in fallbacks)
+        foreach (var incompatible in incompatibles)
         {
-            if (!fallback.Verify()) return false;
+            if (!incompatible.Verify(filesystem)) return false;
         }
         return true;
     }

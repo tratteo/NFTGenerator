@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace NFTGenerator;
@@ -239,6 +240,124 @@ internal static class CommandsDelegates
                 await Task.Delay(250);
                 ConsoleExtensions.ClearConsoleLine();
             }
+        }
+    }
+
+    public static async Task QueryResults(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
+    {
+        IFilesystem filesystem = services.GetService<IFilesystem>();
+        IConfiguration configuration = services.GetService<IConfiguration>();
+        if (!Directory.Exists(Paths.RESULTS))
+        {
+            logger.LogWarning("There are no generated results");
+            return;
+        }
+        if (!Directory.Exists($"{Paths.RESULTS}rarities"))
+        {
+            logger.LogWarning("There are no generated rarities");
+            return;
+        }
+        var files = Directory.GetFiles($"{Paths.RESULTS}rarities", "*.json", SearchOption.AllDirectories);
+        logger.LogInformation($"{Paths.RESULTS}rarities");
+        if (files.Length != configuration.GetValue<int>("Generation:SerieCount"))
+        {
+            logger.LogWarning("The number of generated rarities differs from the serie amount");
+            return;
+        }
+        if (!filesystem.Verify())
+        {
+            return;
+        }
+        List<RarityMetadata> matches = new List<RarityMetadata>();
+        string pattern = handler.GetPositional(0);
+        if (pattern.ToLower().Equals("max"))
+        {
+            RarityMetadata maxRarityMetadata = null;
+            foreach (var file in files)
+            {
+                if (Serializer.DeserializeJson<RarityMetadata>(string.Empty, file, out var rarityMetadata))
+                {
+                    if (maxRarityMetadata is null || maxRarityMetadata.Rarity < rarityMetadata.Rarity)
+                    {
+                        maxRarityMetadata = rarityMetadata;
+                    }
+                }
+            }
+            logger.LogInformation("Max\n{max}", maxRarityMetadata.ToString());
+            return;
+        }
+        else if (pattern.ToLower().Equals("min"))
+        {
+            RarityMetadata minRarityMetadata = null;
+            foreach (var file in files)
+            {
+                if (Serializer.DeserializeJson<RarityMetadata>(string.Empty, file, out var rarityMetadata))
+                {
+                    if (minRarityMetadata is null || minRarityMetadata.Rarity > rarityMetadata.Rarity)
+                    {
+                        minRarityMetadata = rarityMetadata;
+                    }
+                }
+            }
+            logger.LogInformation("Min\n{min}", minRarityMetadata.ToString());
+            return;
+        }
+        var splits = pattern.Split('|');
+        if (splits.Length <= 0)
+        {
+            logger.LogWarning("No pattern provided");
+            return;
+        }
+        (int, int)[] layers = new (int, int)[splits.Length];
+
+        for (var i = 0; i < splits.Length; i++)
+        {
+            var split = splits[i];
+            var elem = split.Split(",");
+            if (!int.TryParse(elem[0], out var first) || !int.TryParse(elem[1], out var second))
+            {
+                logger.LogWarning("Unable to parse integers in pattern");
+                return;
+            }
+            if (first <= 0 || first >= filesystem.Layers.Count)
+            {
+                logger.LogError("Wrong query parameters");
+                return;
+            }
+            layers[i] = (first, second);
+        }
+
+        foreach (var file in files)
+        {
+            if (Serializer.DeserializeJson<RarityMetadata>(string.Empty, file, out var rarityMetadata))
+            {
+                bool isMatch = true;
+                foreach (var pair in layers)
+                {
+                    //logger.LogInformation("{1}, {2}", pair.Item1, pair.Item2);
+                    if (rarityMetadata.Hash[pair.Item1] != pair.Item2)
+                    {
+                        isMatch = false;
+                        break;
+                    }
+                }
+                if (isMatch)
+                {
+                    matches.Add(rarityMetadata);
+                }
+            }
+        }
+        logger.LogInformation("Found {amount} matches", matches.Count);
+
+        if (handler.HasFlag("/p"))
+        {
+            matches.Sort((m1, m2) => m1.Id.CompareTo(m2.Id));
+            StringBuilder builder = new StringBuilder();
+            foreach (var pair in matches)
+            {
+                builder.Append($"Id: {pair.Id}{Environment.NewLine}");
+            }
+            logger.LogInformation(builder.ToString());
         }
     }
 

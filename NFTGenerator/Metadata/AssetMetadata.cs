@@ -14,15 +14,18 @@ internal class AssetMetadata
     [JsonProperty("amount")]
     public int Amount { get; set; }
 
-    [JsonProperty("attributes")]
-    public List<AttributeMetadata> Attributes { get; set; }
+    [JsonProperty("attribute")]
+    public AttributeMetadata Attribute { get; set; }
 
     public static AssetMetadata Template() => Serializer.DeserializeJson<AssetMetadata>(Paths.TEMPLATES, TEMPLATE_NAME, out var metadata) ? metadata : null;
 
     public override string ToString()
     {
         var attr = "";
-        Attributes.ForEach(a => attr += a.ToString());
+        if (Attribute is not null)
+        {
+            attr += Attribute.ToString();
+        }
         return "Amount: " + Amount + "\nAttributes\n" + attr;
     }
 }

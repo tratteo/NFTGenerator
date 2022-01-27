@@ -27,6 +27,10 @@ internal class Filesystem : IFilesystem
 
     public FallbackMetadata FallbackMetadata { get; private set; }
 
+    public double MinRarity { get; private set; }
+
+    public double MaxRarity { get; private set; }
+
     public Filesystem(IServiceProvider services, ILoggerFactory loggerFactory, IConfiguration configuration)
     {
         Layers = new List<Layer>();
@@ -100,6 +104,7 @@ internal class Filesystem : IFilesystem
                 if (!int.TryParse(name, out int id) || !Asset.TryParse(out Asset asset, layerNames[i], id, logger)) continue;
 
                 layer.Assets.Add(asset);
+                asset.Metadata.Attribute.Rarity = asset.Metadata.Amount / (float)serieAmount;
                 //logger.LogInfo($"Asset {j} | id: {asset.Id}");
                 amount += asset.Metadata.Amount;
             }
@@ -136,7 +141,7 @@ internal class Filesystem : IFilesystem
             if (Serializer.DeserializeJson($"{Paths.FALLBACKS}", "fallbacks.json", out FallbackMetadata meta))
             {
                 FallbackMetadata = meta;
-                if (!FallbackMetadata.Verify(Layers.Count))
+                if (!FallbackMetadata.Verify(this))
                 {
                     errors.Add("Errors in fallback metadata");
                 }
@@ -147,11 +152,41 @@ internal class Filesystem : IFilesystem
                 warnings.Add("Unable to deserialize fallbacks metadata");
             }
         }
-        ConsoleColor color = warnings.Count > 0 ? ConsoleColor.DarkYellow : ConsoleColor.Green;
-        color = errors.Count > 0 ? ConsoleColor.DarkRed : ConsoleColor.Green;
+
+        MinRarity = 1F;
+        MaxRarity = 1F;
+
+        foreach (var layer in Layers)
+        {
+            var maxRarityAsset = layer.Assets.MinBy(a => a.Metadata.Attribute.Rarity);
+            var minRarityAsset = layer.Assets.MaxBy(a => a.Metadata.Attribute.Rarity);
+
+            if (verbose)
+            {
+                logger.LogInformation("Layer {layer}, max[{max},{v1}], min[{min},{v2}]", layer.Name, maxRarityAsset.Id, maxRarityAsset.Metadata.Attribute.Rarity, minRarityAsset.Id, minRarityAsset.Metadata.Attribute.Rarity);
+            }
+            MinRarity /= minRarityAsset.Metadata.Attribute.Rarity;
+            MaxRarity /= maxRarityAsset.Metadata.Attribute.Rarity;
+        }
+        if (verbose)
+        {
+            logger.LogInformation("min rarity score {min}, max rarity score {max}", MinRarity, MaxRarity);
+        }
+
         errors.ForEach(e => logger?.LogError(e));
         warnings.ForEach(w => logger?.LogWarning(w));
-        logger?.LogInformation($"Verification process passed with {errors.Count} errors and {warnings.Count} warnings\n", color);
+        if (errors.Count > 0)
+        {
+            logger?.LogError($"Verification process passed with {errors.Count} errors and {warnings.Count} warnings\n");
+        }
+        else if (warnings.Count > 0)
+        {
+            logger?.LogWarning($"Verification process passed with {errors.Count} errors and {warnings.Count} warnings\n");
+        }
+        else
+        {
+            logger?.LogInformation($"Verification process passed with {errors.Count} errors and {warnings.Count} warnings\n");
+        }
         CommandLineService cmdService = services.GetService<CommandLineService>();
         if (cmdService != null) cmdService.Cli.Logger.LogInfo(string.Empty);
         return errors.Count <= 0;
