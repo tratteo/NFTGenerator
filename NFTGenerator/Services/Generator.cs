@@ -6,14 +6,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NFTGenerator.Metadata;
 using NFTGenerator.Objects;
-using NFTGenerator.Statics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using HandierCli;
+using static NFTGenerator.Metadata.TokenMetadata;
+using static NFTGenerator.Metadata.TokenMetadata.PropertiesMetadata;
 
 namespace NFTGenerator.Services;
 
@@ -22,10 +22,11 @@ internal class Generator : IGenerator
     private readonly IFilesystem filesystem;
     private readonly IServiceProvider services;
     private readonly ILogger logger;
-    private readonly NFTMetadata nftMetadataBlueprint;
+    private readonly TokenMetadata nftMetadataBlueprint;
     private readonly IConfiguration configuration;
     private readonly bool verbose;
     private readonly bool allowDuplicates;
+    private readonly Media.Filter? filter;
     private List<int[]> generatedHashes;
     private List<RarityMetadata> rarities;
 
@@ -35,9 +36,19 @@ internal class Generator : IGenerator
         logger = loggerFactory.CreateLogger("Generator");
         filesystem = services.GetService<IFilesystem>();
         configuration = services.GetService<IConfiguration>();
-        nftMetadataBlueprint = NFTMetadata.Template();
+        nftMetadataBlueprint = TokenMetadata.Template();
         verbose = configuration.GetValue<bool>("Debug:Verbose");
         allowDuplicates = configuration.GetValue<bool>("Generation:AllowDuplicates");
+        string filterParse = configuration.GetValue<string>("Generation:Filter");
+        if (filterParse == null)
+        {
+            filter = null;
+        }
+        else
+        {
+            filter = (Media.Filter)Enum.Parse(typeof(Media.Filter), filterParse, true);
+        }
+        logger.LogInformation("{f}", filter);
     }
 
     public void Generate()
@@ -54,7 +65,7 @@ internal class Generator : IGenerator
         {
             Interlocked.Increment(ref currentCount);
             long currentElapsed = reportWatch.ElapsedMilliseconds;
-            if (currentElapsed - lastReport > 500)
+            if (currentElapsed - lastReport > 250)
             {
                 lastReport = currentElapsed;
                 progressBar.Report(currentCount / (float)serieCount);
@@ -85,7 +96,7 @@ internal class Generator : IGenerator
 
     private string GenerateSingle(int serieCount, bool generateRarities, int index, IProgress<int> progress = null)
     {
-        NFTMetadata meta = nftMetadataBlueprint.Clone();
+        TokenMetadata meta = nftMetadataBlueprint.Clone();
         var mintedHash = new int[filesystem.Layers.Count];
         var resPath = $"{Paths.RESULTS}\\{index}.png";
 
@@ -120,7 +131,7 @@ internal class Generator : IGenerator
         var attributes = new List<AttributeMetadata>();
         for (int i = 0; i < iterationPicks.Count; i++)
         {
-            iterationPicks[i].Asset.UsedAmount++;
+            Interlocked.Increment(ref iterationPicks[i].Asset.usedAmount);
             rarityScore /= iterationPicks[i].Asset.Metadata.Attribute.Rarity;
             if (iterationPicks[i].Asset.Metadata.Attribute.Trait != string.Empty)
             {
@@ -128,9 +139,9 @@ internal class Generator : IGenerator
             }
         }
 
-        List<IMediaProvider> assets = filesystem.FallbackMetadata.BuildMediaProviders(iterationPicks, ref rarityScore, attributes, ref mintedHash);
+        List<string> assets = filesystem.FallbackMetadata.BuildMediaProviders(iterationPicks, ref rarityScore, attributes, ref mintedHash);
         progress?.Report(1);
-        Media.ComposePNG(resPath, logger, assets.ToArray());
+        Media.ComposePNG(resPath, logger, filter, assets.ToArray());
 
         meta.AddAttributes(attributes);
 

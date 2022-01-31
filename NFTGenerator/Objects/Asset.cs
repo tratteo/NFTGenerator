@@ -2,24 +2,24 @@
 
 using BetterHaveIt;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using NFTGenerator.Metadata;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using static NFTGenerator.Metadata.TokenMetadata;
 
 namespace NFTGenerator.Objects;
 
 internal class Asset : IMediaProvider
 {
+    public int usedAmount = 0;
     private readonly Random random;
     private List<PooledAsset> assetsPaths;
 
     public int Id { get; private set; }
 
     public AssetMetadata Metadata { get; private set; }
-
-    public int UsedAmount { get; set; } = 0;
 
     public double PickProbability { get; set; }
 
@@ -85,19 +85,19 @@ internal class Asset : IMediaProvider
 
     public string ProvideMediaPath()
     {
-        var list = assetsPaths.FindAll(p => p.UsedAmount < p.Amount);
+        var list = assetsPaths.FindAll(p => p.usedAmount < p.Amount);
         if (list.Count <= 0) throw new Exception("Unable to find pooled assets");
         var sel = list[random.Next(0, list.Count)];
-        sel.UsedAmount++;
+        Interlocked.Increment(ref sel.usedAmount);
         return sel.Path;
     }
 
     private struct PooledAsset
     {
+        public int usedAmount;
+
         public string Path { get; init; }
 
         public int Amount { get; init; }
-
-        public int UsedAmount { get; set; }
     }
 }

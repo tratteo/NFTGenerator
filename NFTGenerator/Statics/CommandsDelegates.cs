@@ -59,7 +59,7 @@ internal static class CommandsDelegates
                 }
                 foreach (var data in metadata)
                 {
-                    if (Serializer.DeserializeJson<NFTMetadata>(string.Empty, data, out var nftData))
+                    if (Serializer.DeserializeJson<TokenMetadata>(string.Empty, data, out var nftData))
                     {
                         if (!nftData.Valid(logger))
                         {
@@ -80,6 +80,42 @@ internal static class CommandsDelegates
                 filesystem.Verify();
                 break;
         }
+    }
+
+    public static void PrepareBatch(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
+    {
+        List<TokenMetadata> metadata = new List<TokenMetadata>();
+        string root = handler.GetPositional(0);
+        var metas = Directory.GetFiles(root, "*.json");
+        logger.LogInformation("Found {amount} metadata", metas.Length);
+        for (var i = 0; i < metas.Length; i++)
+        {
+            var met = metas[i];
+            if (Serializer.DeserializeJson<TokenMetadata>(string.Empty, met, out var nftData))
+            {
+                if (!File.Exists($"{root}\\{nftData.Image}"))
+                {
+                    logger.LogError("Unable to find image asset");
+                    return;
+                }
+
+                foreach (var file in nftData.Properties.Files)
+                {
+                    file.Uri = $"{i}.png";
+                }
+                FileInfo imageInfo = new FileInfo($"{root}\\{nftData.Image}");
+                imageInfo.MoveTo($"{root}\\{i}.png", true);
+
+                nftData.Image = $"{i}.png";
+                metadata.Add(nftData);
+                File.Delete(met);
+            }
+        }
+        for (var i = 0; i < metadata.Count; i++)
+        {
+            Serializer.SerializeJson<TokenMetadata>($"{root}\\", $"{i}.json", metadata[i]);
+        }
+        logger.LogInformation("Serialized {amount} metadata", metadata.Count);
     }
 
     public static void OpenPath(ArgumentsHandler handler, IServiceProvider services, ILogger logger)

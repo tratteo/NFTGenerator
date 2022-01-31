@@ -69,6 +69,11 @@ public class CommandLineService : ICoreRunner
             .Description("opens a path in the explorer")
             .AddAsync(async (handler) => CommandsDelegates.OpenPath(handler, services, logger)));
 
+        Cli.Register(Command.Factory("batch")
+            .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file path"))
+            .Description("prepare a batch out of a collection")
+            .AddAsync(async (handler) => CommandsDelegates.PrepareBatch(handler, services, logger)));
+
         Cli.Register(Command.Factory("generate")
             .Description("start the generation process")
             .ArgumentsHandler(ArgumentsHandler.Factory())
@@ -93,11 +98,12 @@ public class CommandLineService : ICoreRunner
             }));
 
         Cli.Register(Command.Factory("filter")
-            .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file").Positional("output"))
+            .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file").Positional("output").Positional("filter"))
             .AddAsync(async (handler) =>
             {
+                Media.Filter filter = (Media.Filter)Enum.Parse(typeof(Media.Filter), handler.GetPositional(2), true);
                 using Bitmap bitmap = new Bitmap(handler.GetPositional(0));
-                Media.ApplyVideoDegradationFilter(bitmap);
+                Media.ApplyFilter(bitmap, filter);
                 bitmap.Save(handler.GetPositional(1));
             }));
 

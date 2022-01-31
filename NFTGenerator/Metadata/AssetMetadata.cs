@@ -2,7 +2,7 @@
 
 using BetterHaveIt;
 using Newtonsoft.Json;
-using System.Collections.Generic;
+using static NFTGenerator.Metadata.TokenMetadata;
 
 namespace NFTGenerator.Metadata;
 

@@ -104,7 +104,7 @@ internal class Filesystem : IFilesystem
                 if (!int.TryParse(name, out int id) || !Asset.TryParse(out Asset asset, layerNames[i], id, logger)) continue;
 
                 layer.Assets.Add(asset);
-                asset.Metadata.Attribute.Rarity = asset.Metadata.Amount / (float)serieAmount;
+                asset.Metadata.Attribute.Rarity = (float)Math.Round(100F * asset.Metadata.Amount / serieAmount, 2);
                 //logger.LogInfo($"Asset {j} | id: {asset.Id}");
                 amount += asset.Metadata.Amount;
             }
@@ -146,6 +146,9 @@ internal class Filesystem : IFilesystem
                     errors.Add("Errors in fallback metadata");
                 }
                 logger?.LogInformation($"Parsed {FallbackMetadata.GetFallbacksByPriority().Count} incompatibles definitions");
+                var incompatibles = FallbackMetadata.GetFallbacksByPriority();
+                int enable = incompatibles.FindAll(l => l.Enabled).Count;
+                logger?.LogInformation("{en} enabled, {dis} disabled", enable, incompatibles.Count - enable);
             }
             else
             {

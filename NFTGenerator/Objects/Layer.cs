@@ -30,7 +30,7 @@ internal class Layer
 
     public Asset GetRandom()
     {
-        List<Asset> match = Assets.FindAll((a) => a.UsedAmount < a.Metadata.Amount);
+        List<Asset> match = Assets.FindAll((a) => a.usedAmount < a.Metadata.Amount);
         int sum = 0;
         foreach (Asset asset in match)
         {
@@ -50,5 +50,5 @@ internal class Layer
         return match[index];
     }
 
-    public bool HasMintableAssets() => Assets.FindAll((a) => a.UsedAmount < a.Metadata.Amount).Count > 0;
+    public bool HasMintableAssets() => Assets.FindAll((a) => a.usedAmount < a.Metadata.Amount).Count > 0;
 }

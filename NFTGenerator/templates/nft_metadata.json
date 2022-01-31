@@ -1,18 +1,20 @@
 {
   "name": "Neon Cloud ",
   "symbol": "NCC",
-  "description": "The chillest community on the Solana Metaverse",
+  "description": "Glitched in Suncity inside the Solana Metaverse. Well, at least the weather is nice, going to need some sunglasses...",
   "seller_fee_basis_points": 700,
   "image": "image.png",
-  "attributes": [
-  ],
+  "attributes": [],
   "properties": {
-    "files": [
-    ],
+    "files": [],
     "creators": [
       {
         "address": "FpF3CjcNbPuapPs7jUg9f21ffkyH6MubBR6uXA4TVANt",
-        "share": 100
+        "share": 58
+      },
+      {
+        "address": "9wMKssWkgmkzPLFyvLaqAPGnx9hZzNhQwTSihdApGBMu",
+        "share": 42
       }
     ]
   },

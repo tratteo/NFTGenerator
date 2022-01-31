@@ -1,12 +1,12 @@
 ﻿// Copyright Matteo Beltrame
 
-using HandierCli;
 using Newtonsoft.Json;
 using NFTGenerator.Objects;
 using NFTGenerator.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static NFTGenerator.Metadata.TokenMetadata;
 
 namespace NFTGenerator.Metadata;
 
@@ -33,15 +33,15 @@ internal partial class FallbackMetadata
         return incompatibles;
     }
 
-    public List<IMediaProvider> BuildMediaProviders(List<LayerPick> picks, ref double rarityScore, List<AttributeMetadata> attributes, ref int[] mintedHash)
+    public List<string> BuildMediaProviders(List<LayerPick> picks, ref double rarityScore, List<AttributeMetadata> attributes, ref int[] mintedHash)
     {
-        IMediaProvider[] medias = picks.ConvertAll(p => p.Asset as IMediaProvider).ToArray();
+        string[] medias = picks.ConvertAll(p => p.Asset.ProvideMediaPath()).ToArray();
         foreach (var fallbackDef in GetFallbacksByPriority())
         {
             fallbackDef.HandleIncompatible(picks, medias, ref rarityScore, attributes, ref mintedHash);
         }
 
-        List<IMediaProvider> res = new List<IMediaProvider>();
+        List<string> res = new List<string>();
         for (int i = 0; i < medias.Length; i++)
         {
             if (medias[i] != null)

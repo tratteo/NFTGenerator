@@ -6,6 +6,8 @@ using NFTGenerator.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using static NFTGenerator.Metadata.TokenMetadata;
 
 namespace NFTGenerator.Objects;
 
@@ -21,6 +23,9 @@ internal class Incompatible
     [JsonProperty("priority")]
     public int Priority { get; set; }
 
+    [JsonProperty("enabled")]
+    public bool Enabled { get; set; }
+
     [JsonProperty("action")]
     public Action FallbackAction { get; set; }
 
@@ -29,6 +34,7 @@ internal class Incompatible
 
     public Incompatible()
     {
+        Enabled = true;
         Priority = 0;
         FallbackAction = Action.Replace;
         Instructions = new List<Instruction>();
@@ -43,9 +49,9 @@ internal class Incompatible
         return true;
     }
 
-    public void HandleIncompatible(List<LayerPick> picks, IMediaProvider[] sideEffectMedia, ref double rarityScore, List<AttributeMetadata> attributes, ref int[] mintedHash)
+    public void HandleIncompatible(List<LayerPick> picks, string[] sideEffectMedia, ref double rarityScore, List<AttributeMetadata> attributes, ref int[] mintedHash)
     {
-        if (Instructions.Count <= 0) return;
+        if (Instructions.Count <= 0 || !Enabled) return;
         foreach (Instruction instruction in Instructions)
         {
             var pick = picks.Find(a => a.Layer.Name.Equals(instruction.LayerName));
@@ -58,22 +64,29 @@ internal class Incompatible
         for (var i = 0; i < Instructions.Count; i++)
         {
             Instruction instruction = Instructions[i];
-
             var pick = picks.Find(a => a.Layer.Name.Equals(instruction.LayerName));
             int index = picks.IndexOf(pick);
-            instruction.CachedHitId = pick.Asset.Id;
+
+            int cachedHit = pick.Asset.Id;
             if (FallbackAction == Action.Replace)
             {
                 if (instruction.InstructionAction == Instruction.Action.Remove)
                 {
                     mintedHash[index] = -1;
                     sideEffectMedia[index] = null;
-                    //rarityScore *= pick.Asset.PickProbability;
+                    rarityScore *= pick.Asset.Metadata.Attribute.Rarity;
                     attributes.RemoveAll(a => a.Equals(pick.Asset.Metadata.Attribute));
                 }
                 else if (instruction.InstructionAction == Instruction.Action.Replace)
                 {
-                    sideEffectMedia[index] = instruction;
+                    string res = $"{Paths.FALLBACKS}";
+                    if (!instruction.MediaPath.Equals(string.Empty)) res += $"{instruction.MediaPath}\\";
+                    if (instruction.MediaName.Equals("*"))
+                        res += $"{cachedHit}.png";
+                    else
+                        res += instruction.MediaName;
+
+                    sideEffectMedia[index] = res;
                 }
                 else if (instruction.InstructionAction == Instruction.Action.Keep)
                 {
@@ -91,14 +104,14 @@ internal class Incompatible
             for (int i = 0; i < sorted.Count; i++)
             {
                 LayerPick pick = picks.Find(p => p.Layer.Name.Equals(sorted[i].LayerName));
-                sideEffectMedia[indexes[i]] = pick.Asset;
+                sideEffectMedia[indexes[i]] = pick.Asset.ProvideMediaPath();
             }
         }
         return;
     }
 
     [Serializable]
-    public class Instruction : IMediaProvider
+    public class Instruction
     {
         public enum Action
         { Keep, Remove, Replace }
@@ -121,25 +134,22 @@ internal class Incompatible
         [JsonProperty("assets")]
         public List<int> AssetIndexes { get; init; }
 
-        public int CachedHitId { get; set; }
-
         public Instruction()
         {
             InstructionAction = Action.Keep;
-            CachedHitId = -1;
             MediaName = "*";
             Order = 0;
         }
 
-        public string ProvideMediaPath()
-        {
-            string res = $"{Paths.FALLBACKS}";
-            if (!MediaPath.Equals(string.Empty)) res += $"{MediaPath}\\";
-            if (MediaName.Equals("*"))
-                res += $"{CachedHitId}.png";
-            else
-                res += MediaName;
-            return res;
-        }
+        //public string ProvideMediaPath()
+        //{
+        //    string res = $"{Paths.FALLBACKS}";
+        //    if (!MediaPath.Equals(string.Empty)) res += $"{MediaPath}\\";
+        //    if (MediaName.Equals("*"))
+        //        res += $"{cachedHitId}.png";
+        //    else
+        //        res += MediaName;
+        //    return res;
+        //}
     }
 }

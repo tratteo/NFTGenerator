@@ -10,14 +10,19 @@ namespace NFTGenerator;
 
 internal static class Media
 {
-    public static void ComposePNG(string res, ILogger logger, params IMediaProvider[] mediaProvider)
+    public enum Filter
+    {
+        VideoDegradation
+    }
+
+    public static void ComposePNG(string res, ILogger logger, Filter? filter = null, params string[] mediaProvider)
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
         stopwatch.Restart();
         Bitmap[] maps = new Bitmap[mediaProvider.Length];
         for (int i = 0; i < maps.Length; i++)
         {
-            string path = mediaProvider[i].ProvideMediaPath();
+            string path = mediaProvider[i];
             //logger.LogInfo(mediaProvider[i].ProvideMediaPath());
             maps[i] = new Bitmap(path);
         }
@@ -40,7 +45,7 @@ internal static class Media
         stopwatch.Stop();
         // logger.LogInfo($"Merges bitmaps {stopwatch.ElapsedMilliseconds} ms", ConsoleColor.Magenta);
         stopwatch.Restart();
-        ApplyVideoDegradationFilter(target);
+        ApplyFilter(target, filter);
         //var quantizer = new WuQuantizer();
         //using var quantized = quantizer.QuantizeImage(target);
         //quantized.Save(res, ImageFormat.Png);
@@ -51,7 +56,18 @@ internal static class Media
         //logger.LogInfo($"Finishing {stopwatch.ElapsedMilliseconds} ms", ConsoleColor.Magenta);
     }
 
-    public static void ApplyVideoDegradationFilter(Bitmap bitmap, int strenght = 15, int width = 3)
+    public static void ApplyFilter(Bitmap bitmap, Filter? filter)
+    {
+        if (filter == null) return;
+        switch (filter)
+        {
+            case Filter.VideoDegradation:
+                ApplyVideoDegradationFilter(bitmap);
+                break;
+        }
+    }
+
+    private static void ApplyVideoDegradationFilter(Bitmap bitmap, int strenght = 15, int width = 3)
     {
         Color[] filters = new Color[] { Color.FromArgb(strenght, 0, 0), Color.FromArgb(0, strenght, 0), Color.FromArgb(0, 0, strenght) };
         int filtersIndex = 0;
