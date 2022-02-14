@@ -43,26 +43,8 @@ public class CommandLineService : ICoreRunner
 
         Cli.Register(Command.Factory("rename-progr")
             .Description("rename all files in a folder with a progressive index")
-            .ArgumentsHandler(ArgumentsHandler.Factory().Positional("path to folder").Keyed("-pm", "pattern matching string"))
-            .AddAsync(async (handler) =>
-            {
-                int counter = 0;
-                bool usingPattern = handler.GetKeyed("-pm", out var pattern);
-                var files = usingPattern ? Directory.GetFiles(handler.GetPositional(0), pattern) : Directory.GetFiles(handler.GetPositional(0));
-                var dirs = usingPattern ? Directory.GetDirectories(handler.GetPositional(0), pattern) : Directory.GetDirectories(handler.GetPositional(0));
-                for (int i = 0; i < dirs.Length; i++, counter++)
-                {
-                    DirectoryInfo directoryInfo = new DirectoryInfo(dirs[i]);
-                    (string path, string name) = PathExtensions.Split(directoryInfo.FullName);
-                    if (directoryInfo.Name.Equals($"{counter}")) continue;
-                    directoryInfo.MoveTo($"{path}\\{counter}");
-                }
-                for (int i = 0; i < files.Length; i++, counter++)
-                {
-                    FileInfo fileInfo = new FileInfo(files[i]);
-                    fileInfo.MoveTo($"{fileInfo.Directory.FullName}\\{counter}{fileInfo.Extension}", true);
-                }
-            }));
+            .ArgumentsHandler(ArgumentsHandler.Factory().Positional("path to folder").Keyed("-pm", "pattern matching string").Keyed("-si", "start index to rename with"))
+            .AddAsync(async (handler) => CommandsDelegates.RenameProgressively(handler, services, logger)));
 
         Cli.Register(Command.Factory("open")
             .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file path").Keyed("-n", "layer number"))
@@ -99,39 +81,7 @@ public class CommandLineService : ICoreRunner
 
         Cli.Register(Command.Factory("filter")
             .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file").Positional("output").Positional("filter"))
-            .AddAsync(async (handler) =>
-            {
-                Media.Filter filter = (Media.Filter)Enum.Parse(typeof(Media.Filter), handler.GetPositional(2), true);
-                using Bitmap bitmap = new Bitmap(handler.GetPositional(0));
-                Media.ApplyFilter(bitmap, filter);
-                bitmap.Save(handler.GetPositional(1));
-            }));
-
-        Cli.Register(Command.Factory("refactor")
-            .ArgumentsHandler(ArgumentsHandler.Factory().Positional("root folder"))
-            .AddAsync(async (handler) =>
-            {
-                string[] allfiles = Directory.GetFiles(handler.GetPositional(0), "*.json", SearchOption.AllDirectories);
-                foreach (string file in allfiles)
-                {
-                    if (Serializer.DeserializeJson<AssetMetadata>(string.Empty, file, out var meta))
-                    {
-                        var newMeta = new AssetMetadata()
-                        { Amount = meta.Amount };
-                        Serializer.SerializeJson(string.Empty, file, newMeta);
-                    }
-                }
-            }));
-
-        //Cli.Register(Command.Factory("compress")
-        //    .ArgumentsHandler(ArgumentsHandler.Factory().Positional("file").Positional("output"))
-        //    .AddAsync(async (handler) =>
-        //    {
-        //        var quantizer = new WuQuantizer();
-        //        using var bitmap = new Bitmap(handler.GetPositional(0));
-        //        using var quantized = quantizer.QuantizeImage(bitmap);
-        //        quantized.Save(handler.GetPositional(1), ImageFormat.Png);
-        //    }));
+            .AddAsync(async (handler) => CommandsDelegates.ApplyFilter(handler, services, logger)));
 
         Cli.Register(Command.Factory("scale-serie")
             .Description("scale the serie amount by an integer factor")

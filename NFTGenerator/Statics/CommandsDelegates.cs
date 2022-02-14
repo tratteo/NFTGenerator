@@ -11,6 +11,7 @@ using NFTGenerator.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -84,13 +85,15 @@ internal static class CommandsDelegates
 
     public static void PrepareBatch(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
-        List<TokenMetadata> metadata = new List<TokenMetadata>();
+        List<(int index, Bitmap oldImage, TokenMetadata meta)> metadata = new List<(int, Bitmap, TokenMetadata)>();
         string root = handler.GetPositional(0);
         var metas = Directory.GetFiles(root, "*.json");
         logger.LogInformation("Found {amount} metadata", metas.Length);
-        for (var i = 0; i < metas.Length; i++)
+        int count = 0;
+        for (var i = 300; i < 1569; i++, count++)
         {
-            var met = metas[i];
+            logger.LogInformation("Editing {d}", i);
+            var met = $"{root}\\{i}.json";
             if (Serializer.DeserializeJson<TokenMetadata>(string.Empty, met, out var nftData))
             {
                 if (!File.Exists($"{root}\\{nftData.Image}"))
@@ -98,24 +101,77 @@ internal static class CommandsDelegates
                     logger.LogError("Unable to find image asset");
                     return;
                 }
-
                 foreach (var file in nftData.Properties.Files)
                 {
-                    file.Uri = $"{i}.png";
+                    file.Uri = $"{count}.png";
                 }
                 FileInfo imageInfo = new FileInfo($"{root}\\{nftData.Image}");
-                imageInfo.MoveTo($"{root}\\{i}.png", true);
-
-                nftData.Image = $"{i}.png";
-                metadata.Add(nftData);
+                imageInfo.MoveTo($"{root}\\{count}.png", false);
+                nftData.Image = $"{count}.png";
+                Serializer.SerializeJson<TokenMetadata>(string.Empty, $"{root}\\{count}.json", nftData);
                 File.Delete(met);
+                //metadata.Add((i, new Bitmap($"{root}\\{nftData.Image}"), nftData));
             }
         }
-        for (var i = 0; i < metadata.Count; i++)
-        {
-            Serializer.SerializeJson<TokenMetadata>($"{root}\\", $"{i}.json", metadata[i]);
-        }
+        //PurgeRecursive(root);
+        //foreach (var (index, oldImage, meta) in metadata)
+        //{
+        //    foreach (var file in meta.Properties.Files)
+        //    {
+        //        file.Uri = $"{index}.png";
+        //    }
+        //    meta.Image = $"{index}.png";
+        //    oldImage.Save($"{root}\\{index}.png");
+        //}
         logger.LogInformation("Serialized {amount} metadata", metadata.Count);
+    }
+
+    public static void ApplyFilter(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
+    {
+        Media.Filter filter;
+        try
+        {
+            filter = (Media.Filter)Enum.Parse(typeof(Media.Filter), handler.GetPositional(2), true);
+        }
+        catch (Exception)
+        {
+            logger.LogError("Unable to parse filter");
+            return;
+        }
+        using Bitmap bitmap = new Bitmap(handler.GetPositional(0));
+        Media.ApplyFilter(bitmap, filter);
+        bitmap.Save(handler.GetPositional(1));
+    }
+
+    public static void RenameProgressively(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
+    {
+        int start = 0;
+        if (handler.GetKeyed("-si", out string startIndex))
+        {
+            try
+            {
+                start = int.Parse(startIndex);
+            }
+            catch (Exception)
+            {
+            }
+        }
+        int counter = start;
+        bool usingPattern = handler.GetKeyed("-pm", out var pattern);
+        var files = usingPattern ? Directory.GetFiles(handler.GetPositional(0), pattern) : Directory.GetFiles(handler.GetPositional(0));
+        var dirs = usingPattern ? Directory.GetDirectories(handler.GetPositional(0), pattern) : Directory.GetDirectories(handler.GetPositional(0));
+        for (int i = 0; i < dirs.Length; i++, counter++)
+        {
+            DirectoryInfo directoryInfo = new DirectoryInfo(dirs[i]);
+            (string path, string name) = PathExtensions.Split(directoryInfo.FullName);
+            if (directoryInfo.Name.Equals($"{counter}")) continue;
+            directoryInfo.MoveTo($"{path}\\{counter}");
+        }
+        for (int i = 0; i < files.Length; i++, counter++)
+        {
+            FileInfo fileInfo = new FileInfo(files[i]);
+            fileInfo.MoveTo($"{fileInfo.Directory.FullName}\\{counter}{fileInfo.Extension}", true);
+        }
     }
 
     public static void OpenPath(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
@@ -397,7 +453,7 @@ internal static class CommandsDelegates
         }
     }
 
-    private static void PurgeRecursive(string path, ILogger logger = null)
+    public static void PurgeRecursive(string path, ILogger logger = null)
     {
         var amount = 0;
         DirectoryInfo dInfo = new DirectoryInfo(path);
