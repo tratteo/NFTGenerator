@@ -71,28 +71,30 @@ internal static class Media
         return null;
     }
 
-    //horizontal shift
-
-    public static Bitmap Shift(Bitmap image, int lower, int upper, int shiftLower, int shiftUpper)
+    public static Bitmap ShiftFilter(Bitmap image, int lower, int upper, int shiftLower, int shiftUpper, int nShifts)
     {
         Bitmap test = new Bitmap(image);
 
-        Random r = new Random(image.GetHashCode());
-        int shift;
+        Random r = new Random(image.GetHashCode() * image.GetPixel(lower, upper).R);
 
-        if (r.Next(0, 2) == 0)
+        for (int i = 0; i < nShifts; i++)
         {
-            shift = r.Next(shiftLower, shiftUpper);
+            var shift = GetRandomShift(r, shiftLower, shiftUpper);
+            ShiftSingleLine(image, test, r, shift, lower, upper);
         }
-        else
-        {
-            shift = r.Next(1000 - shiftUpper, 1000 - shiftLower);
-        }
+        return test;
+    }
 
+    /// <summary>
+    ///   method <c> GetRandomShift </c> Decides wheter to shift left or right than picks the amount
+    /// </summary>
+    private static int GetRandomShift(Random r, int lowerBound, int upperBound) => r.Next(0, 2) == 0 ? r.Next(lowerBound, upperBound) : r.Next(1000 - lowerBound, 1000 - upperBound);
+
+    private static Bitmap ShiftSingleLine(Bitmap image, Bitmap res, Random r, int shift, int lower, int upper)
+    {
         int h = r.Next(lower, upper);
         int w = image.Width;
-        int position = r.Next(0, 1000);
-        Bitmap b = new Bitmap(w, h);
+        int position = r.Next(150, 850);// height range in which shifts are performed
         for (int i = 0; i < h; i++)
         {
             if (i + position >= image.Height)
@@ -104,16 +106,15 @@ internal static class Media
                 Color c = image.GetPixel(j, i + position);
                 if (j + shift < image.Width)
                 {
-                    test.SetPixel(j + shift, i + position, c);
+                    res.SetPixel(j + shift, i + position, c);
                 }
                 else
                 {
-                    test.SetPixel(j + shift - image.Width, i + position, c);
+                    res.SetPixel(j + shift - image.Width, i + position, c);
                 }
             }
         }
-
-        return test;
+        return res;
     }
 
     private static Bitmap ApplyVideoDegradationFilter(Bitmap bitmap, int strenght = 15, int width = 3)
@@ -155,10 +156,10 @@ internal static class Media
         //red shifted layer
         RedShift(image, res, shiftAmount);
         //horizontal shift lines
-        int lines = r.Next(8, 8);
+        int lines = r.Next(2, 5);
         for (int i = 0; i < lines; i++)
         {
-            res = Shift(res, 30, 50, 20, 60);
+            res = ShiftFilter(res, 100, 100, 200, 200, lines);
         }
         return res;
     }
