@@ -1,18 +1,14 @@
-﻿using BetterHaveIt;
+﻿// Copyright Matteo Beltrame
+
 using HandierCli;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using NFTGenerator.Metadata;
 using System;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace NFTGenerator.Services;
 
-public class CommandLineService : ICoreRunner
+public class CommandLineService
 {
     private readonly IServiceProvider services;
 
@@ -20,10 +16,10 @@ public class CommandLineService : ICoreRunner
 
     public CommandLine Cli { get; private set; }
 
-    public CommandLineService(IServiceProvider services, ILoggerFactory loggerFactory, IConfiguration configuration)
+    public CommandLineService(IServiceProvider services, ILoggerFactory loggerFactory)
     {
         this.services = services;
-        this.logger = loggerFactory.CreateLogger("CLI");
+        logger = loggerFactory.CreateLogger("CLI");
         BuildCli();
     }
 
@@ -31,7 +27,7 @@ public class CommandLineService : ICoreRunner
 
     private void BuildCli()
     {
-        IFilesystem filesystem = services.GetService<IFilesystem>();
+        var filesystem = services.GetRequiredService<IFilesystem>();
 
         Cli = CommandLine.Factory().ExitOn("exit", "quit").OnUnrecognized((cmd) => logger.LogError($"{cmd} not recognized")).Build();
         Command PURGE = Command.Factory("purge")

@@ -1,27 +1,23 @@
 ﻿// Copyright Matteo Beltrame
 
 using BetterHaveIt;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using Microsoft.Extensions.Options;
 using NFTGenerator.Metadata;
 using NFTGenerator.Objects;
+using NFTGenerator.Settings;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace NFTGenerator.Services;
 
 internal class Filesystem : IFilesystem
 {
-    private readonly IServiceProvider services;
     private readonly ILogger logger;
-    private readonly IConfiguration configuration;
+    private readonly IOptionsMonitor<GenerationSettings> generationSettings;
 
     public List<Layer> Layers { get; private set; }
 
@@ -31,23 +27,22 @@ internal class Filesystem : IFilesystem
 
     public double MaxRarity { get; private set; }
 
-    public Filesystem(IServiceProvider services, ILoggerFactory loggerFactory, IConfiguration configuration)
+    public Filesystem(ILoggerFactory loggerFactory, IOptionsMonitor<GenerationSettings> generationSettings)
     {
         Layers = new List<Layer>();
-        this.services = services;
-        this.logger = loggerFactory.CreateLogger("Filesystem");
-        this.configuration = configuration;
+        logger = loggerFactory.CreateLogger("Filesystem");
+        this.generationSettings = generationSettings;
     }
 
     public float CalculateDispositions()
     {
-        float dispositions = float.MaxValue;
-        int bound = 1;
-        foreach (Layer layer in Layers)
+        var dispositions = float.MaxValue;
+        var bound = 1;
+        foreach (var layer in Layers)
         {
             bound *= layer.Assets.Count;
             float avgAssetsDistrib = 1;
-            foreach (Asset asset in layer.Assets)
+            foreach (var asset in layer.Assets)
             {
                 avgAssetsDistrib *= asset.Metadata.Amount;
             }
@@ -61,10 +56,11 @@ internal class Filesystem : IFilesystem
 
     public bool Verify()
     {
-        List<string> warnings = new List<string>();
-        List<string> errors = new List<string>();
-        var serieAmount = configuration.GetValue<int>("Generation:SerieCount");
-        bool verbose = configuration.GetSection("Debug:Verbose").Get<bool>();
+        var warnings = new List<string>();
+        var errors = new List<string>();
+        var serieAmount = generationSettings.CurrentValue.SerieCount;
+        // TODO change
+        var verbose = true;
 
         #region Create folders
 
@@ -87,21 +83,21 @@ internal class Filesystem : IFilesystem
 
         #endregion Create folders
 
-        int assetsCount = 0;
+        var assetsCount = 0;
 
         var layerNames = Directory.GetDirectories($"{Paths.LAYERS}");
         for (var i = 0; i < layerNames.Length; i++)
         {
-            int amount = 0;
+            var amount = 0;
             Layer layer = new(layerNames[i], i);
             //logger.LogInfo($"Layer {i}: {layer.Name}");
-            Regex reg = new Regex(@"[0-9]+.json");
+            var reg = new Regex(@"[0-9]+.json");
             var assets = Directory.GetFiles(layerNames[i], "*.json").Where(s => reg.IsMatch(s));
             for (var j = 0; j < assets.Count(); j++)
             {
-                string name = PathExtensions.Split(assets.ElementAt(j)).Item2.Replace(".json", string.Empty);
+                var name = PathExtensions.Split(assets.ElementAt(j)).Item2.Replace(".json", string.Empty);
 
-                if (!int.TryParse(name, out int id) || !Asset.TryParse(out Asset asset, layerNames[i], id, logger)) continue;
+                if (!int.TryParse(name, out var id) || !Asset.TryParse(out var asset, layerNames[i], id, logger)) continue;
 
                 layer.Assets.Add(asset);
                 asset.Metadata.Attribute.Rarity = (float)Math.Round(100F * asset.Metadata.Amount / serieAmount, 2);
@@ -147,7 +143,7 @@ internal class Filesystem : IFilesystem
                 }
                 logger?.LogInformation($"Parsed {FallbackMetadata.GetFallbacksByPriority().Count} incompatibles definitions");
                 var incompatibles = FallbackMetadata.GetFallbacksByPriority();
-                int enable = incompatibles.FindAll(l => l.Enabled).Count;
+                var enable = incompatibles.FindAll(l => l.Enabled).Count;
                 logger?.LogInformation("{en} enabled, {dis} disabled", enable, incompatibles.Count - enable);
             }
             else
@@ -190,8 +186,6 @@ internal class Filesystem : IFilesystem
         {
             logger?.LogInformation($"Verification process passed with {errors.Count} errors and {warnings.Count} warnings\n");
         }
-        CommandLineService cmdService = services.GetService<CommandLineService>();
-        if (cmdService != null) cmdService.Cli.Logger.LogInfo(string.Empty);
         return errors.Count <= 0;
     }
 }
