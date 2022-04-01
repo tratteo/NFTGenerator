@@ -139,8 +139,7 @@ internal static class CommandsDelegates
             return;
         }
         using Bitmap bitmap = new Bitmap(handler.GetPositional(0));
-        Media.ApplyFilter(bitmap, filter);
-        bitmap.Save(handler.GetPositional(1));
+        Media.ApplyFilter(bitmap, filter).Save(handler.GetPositional(1));
     }
 
     public static void RenameProgressively(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
