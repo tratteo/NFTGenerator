@@ -13,7 +13,9 @@ internal static class Media
     public enum Filter
     {
         VideoDegradation,
-        RgbShift
+        RgbShift,
+        SliceShift,
+        VideoD_RgbShift
     }
 
     public static void ComposePNG(string res, ILogger logger, Filter? filter = null, params string[] mediaProvider)
@@ -46,7 +48,7 @@ internal static class Media
         stopwatch.Stop();
         // logger.LogInfo($"Merges bitmaps {stopwatch.ElapsedMilliseconds} ms", ConsoleColor.Magenta);
         stopwatch.Restart();
-        ApplyFilter(target, filter);
+        target = ApplyFilter(target, filter);
         //var quantizer = new WuQuantizer();
         //using var quantized = quantizer.QuantizeImage(target);
         //quantized.Save(res, ImageFormat.Png);
@@ -67,11 +69,27 @@ internal static class Media
 
             case Filter.RgbShift:
                 return ApplyGlitchFilter(bitmap);
+
+            case Filter.SliceShift:
+                return ApplyShiftFilter(bitmap);
+
+            case Filter.VideoD_RgbShift:
+                return ApplyGlitchFilter(ApplyVideoDegradationFilter(bitmap));
         }
         return null;
     }
 
-    public static Bitmap ShiftFilter(Bitmap image, int lower, int upper, int shiftLower, int shiftUpper, int nShifts)
+    /// <summary>
+    ///   Applies the shift filter to a given Bitmap
+    /// </summary>
+    /// <param name="image"> The Bitmap to apply the filter to </param>
+    /// <param name="lower"> lower bound for the row's height </param>
+    /// <param name="upper"> upper bound for the row's height </param>
+    /// <param name="shiftAmountLower"> lower bound for the row's shift amount </param>
+    /// <param name="shiftAmountUpper"> upper bound for the row's shift amount </param>
+    /// <param name="nShifts"> Number of shifts to perform on the Image </param>
+    /// <returns> </returns>
+    private static Bitmap ApplyShiftFilter(Bitmap image, int lower = 30, int upper = 60, int shiftAmountLower = 20, int shiftAmountUpper = 100, int nShifts = 4)
     {
         Bitmap test = new Bitmap(image);
 
@@ -79,42 +97,10 @@ internal static class Media
 
         for (int i = 0; i < nShifts; i++)
         {
-            var shift = GetRandomShift(r, shiftLower, shiftUpper);
+            var shift = GetRandomShift(r, shiftAmountLower, shiftAmountUpper);
             ShiftSingleLine(image, test, r, shift, lower, upper);
         }
         return test;
-    }
-
-    /// <summary>
-    ///   method <c> GetRandomShift </c> Decides wheter to shift left or right than picks the amount
-    /// </summary>
-    private static int GetRandomShift(Random r, int lowerBound, int upperBound) => r.Next(0, 2) == 0 ? r.Next(lowerBound, upperBound) : r.Next(1000 - lowerBound, 1000 - upperBound);
-
-    private static Bitmap ShiftSingleLine(Bitmap image, Bitmap res, Random r, int shift, int lower, int upper)
-    {
-        int h = r.Next(lower, upper);
-        int w = image.Width;
-        int position = r.Next(150, 850);// height range in which shifts are performed
-        for (int i = 0; i < h; i++)
-        {
-            if (i + position >= image.Height)
-            {
-                break;
-            }
-            for (int j = 0; j < w; j++)
-            {
-                Color c = image.GetPixel(j, i + position);
-                if (j + shift < image.Width)
-                {
-                    res.SetPixel(j + shift, i + position, c);
-                }
-                else
-                {
-                    res.SetPixel(j + shift - image.Width, i + position, c);
-                }
-            }
-        }
-        return res;
     }
 
     private static Bitmap ApplyVideoDegradationFilter(Bitmap bitmap, int strenght = 15, int width = 3)
@@ -156,12 +142,9 @@ internal static class Media
         //red shifted layer
         RedShift(image, res, shiftAmount);
         //horizontal shift lines
-        int lines = r.Next(2, 5);
-        for (int i = 0; i < lines; i++)
-        {
-            res = ShiftFilter(res, 100, 100, 200, 200, lines);
-        }
-        return res;
+        int lines = r.Next(2, 8);
+
+        return ApplyShiftFilter(res, 30, 150, 8, 25, lines);
     }
 
     #region Color Shift
@@ -247,4 +230,42 @@ internal static class Media
     }
 
     #endregion Color Shift
+
+    #region slice Shift
+
+    /// <summary>
+    ///   Method <c> GetRandomShift </c> Decides wheter to shift left or right than picks the amount
+    /// </summary>
+    /// <param name="lowerBound"> lower bound for the row's shift amount </param>
+    /// <param name="upperBound"> upper bound for the row's shift amount </param>
+    private static int GetRandomShift(Random r, int lowerBound, int upperBound) => r.Next(0, 2) == 0 ? r.Next(lowerBound, upperBound) : r.Next(1000 - upperBound, 1000 - lowerBound);
+
+    private static Bitmap ShiftSingleLine(Bitmap image, Bitmap res, Random r, int shift, int lower, int upper)
+    {
+        int h = r.Next(lower, upper);
+        int w = image.Width;
+        int position = r.Next(150, 850);// height range in which shifts are performed
+        for (int i = 0; i < h; i++)
+        {
+            if (i + position >= image.Height)
+            {
+                break;
+            }
+            for (int j = 0; j < w; j++)
+            {
+                Color c = image.GetPixel(j, i + position);
+                if (j + shift < image.Width)
+                {
+                    res.SetPixel(j + shift, i + position, c);
+                }
+                else
+                {
+                    res.SetPixel(j + shift - image.Width, i + position, c);
+                }
+            }
+        }
+        return res;
+    }
+
+    #endregion slice Shift
 }
