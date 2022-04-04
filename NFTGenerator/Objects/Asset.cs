@@ -46,7 +46,7 @@ internal class Asset : IMediaProvider
             return false;
         }
 
-        if (Serializer.DeserializeJson(string.Empty, metadata[0], out AssetMetadata assetMetadata))
+        if (Serializer.DeserializeJson(metadata[0], out AssetMetadata assetMetadata))
         {
             asset.Metadata = assetMetadata;
         }
@@ -55,9 +55,9 @@ internal class Asset : IMediaProvider
             asset.Metadata.Attribute = new AttributeMetadata();
         }
         asset.assetsPaths = new List<PooledAsset>();
-        bool isPooled = Directory.Exists($"{resourceAbsolutePath}\\{id}");
-        string assetsPaths = isPooled ? $"{resourceAbsolutePath}\\{id}" : resourceAbsolutePath;
-        string searchPattern = isPooled ? "*.png" : $"{id}.png";
+        var isPooled = Directory.Exists($"{resourceAbsolutePath}\\{id}");
+        var assetsPaths = isPooled ? $"{resourceAbsolutePath}\\{id}" : resourceAbsolutePath;
+        var searchPattern = isPooled ? "*.png" : $"{id}.png";
 
         var assets = Directory.GetFiles(assetsPaths, searchPattern);
         if (assets.Length <= 0)
@@ -66,9 +66,9 @@ internal class Asset : IMediaProvider
             asset = null;
             return false;
         }
-        int elementsPerAsset = asset.Metadata.Amount / assets.Length;
-        int rest = asset.Metadata.Amount - (elementsPerAsset * assets.Length);
-        for (int i = 0; i < assets.Length; i++)
+        var elementsPerAsset = asset.Metadata.Amount / assets.Length;
+        var rest = asset.Metadata.Amount - (elementsPerAsset * assets.Length);
+        for (var i = 0; i < assets.Length; i++)
         {
             if (i == assets.Length - 1)
             {

@@ -17,7 +17,7 @@ internal class AssetMetadata
     [JsonProperty("attribute")]
     public AttributeMetadata Attribute { get; set; }
 
-    public static AssetMetadata Template() => Serializer.DeserializeJson<AssetMetadata>(Paths.TEMPLATES, TEMPLATE_NAME, out var metadata) ? metadata : null;
+    public static AssetMetadata Template() => Serializer.DeserializeJson<AssetMetadata>(Paths.TEMPLATES + TEMPLATE_NAME, out var metadata) ? metadata : null;
 
     public override string ToString()
     {

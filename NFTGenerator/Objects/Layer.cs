@@ -1,9 +1,7 @@
 ﻿// Copyright Matteo Beltrame
 
-using BetterHaveIt;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace NFTGenerator.Objects;
 
@@ -25,23 +23,23 @@ internal class Layer
         Index = index;
         random = new Random();
         Path = path;
-        Name = PathExtensions.Split(path).Item2;
+        Name = System.IO.Path.GetFileName(path);
     }
 
     public Asset GetRandom()
     {
-        List<Asset> match = Assets.FindAll((a) => a.usedAmount < a.Metadata.Amount);
-        int sum = 0;
-        foreach (Asset asset in match)
+        var match = Assets.FindAll((a) => a.usedAmount < a.Metadata.Amount);
+        var sum = 0;
+        foreach (var asset in match)
         {
             sum += asset.Metadata.Amount;
         }
-        foreach (Asset asset in match)
+        foreach (var asset in match)
         {
             asset.PickProbability = (double)asset.Metadata.Amount / sum;
         }
-        int index = -1;
-        double r = random.NextDouble();
+        var index = -1;
+        var r = random.NextDouble();
         while (r > 0)
         {
             r -= match[++index].PickProbability;

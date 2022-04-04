@@ -95,7 +95,7 @@ internal class Filesystem : IFilesystem
             var assets = Directory.GetFiles(layerNames[i], "*.json").Where(s => reg.IsMatch(s));
             for (var j = 0; j < assets.Count(); j++)
             {
-                var name = PathExtensions.Split(assets.ElementAt(j)).Item2.Replace(".json", string.Empty);
+                var name = Path.GetFileName(assets.ElementAt(j)).Replace(".json", string.Empty);
 
                 if (!int.TryParse(name, out var id) || !Asset.TryParse(out var asset, layerNames[i], id, logger)) continue;
 
@@ -134,7 +134,7 @@ internal class Filesystem : IFilesystem
 
         if (Directory.Exists($"{Paths.FALLBACKS}"))
         {
-            if (Serializer.DeserializeJson($"{Paths.FALLBACKS}", "fallbacks.json", out FallbackMetadata meta))
+            if (Serializer.DeserializeJson($"{Paths.FALLBACKS}fallbacks.json", out FallbackMetadata meta))
             {
                 FallbackMetadata = meta;
                 if (!FallbackMetadata.Verify(this))

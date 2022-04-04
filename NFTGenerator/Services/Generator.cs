@@ -74,7 +74,7 @@ internal class Generator : IGenerator
         foreach (var rarity in rarities)
         {
             rarity.Rarity = (float)(100F * (rarity.Rarity - minRarity) / diff);
-            Serializer.SerializeJson($"{Paths.RESULTS}rarities\\", $"{rarity.Id}-rarity.json", rarity);
+            Serializer.SerializeJson($"{Paths.RESULTS}rarities\\{rarity.Id}-rarity.json", rarity);
         }
         watch.Stop();
 
@@ -146,7 +146,7 @@ internal class Generator : IGenerator
         meta.Image = $"{index}.png";
         meta.Properties.Files = new List<FileMetadata>() { new FileMetadata() { Uri = meta.Image, Type = "image/png" } };
 
-        Serializer.SerializeJson($"{Paths.RESULTS}\\", $"{index}.json", meta);
+        Serializer.SerializeJson($"{Paths.RESULTS}{index}.json", meta);
         lock (generatedHashes)
         {
             generatedHashes.Add(mintedHash);

@@ -37,7 +37,7 @@ internal class TokenMetadata
     [JsonProperty("collection")]
     public CollectionMetadata Collection { get; set; }
 
-    public static TokenMetadata Template() => Serializer.DeserializeJson<TokenMetadata>(Paths.TEMPLATES, TEMPLATE_NAME, out var metadata) ? metadata : null;
+    public static TokenMetadata Template() => Serializer.DeserializeJson<TokenMetadata>(Paths.TEMPLATES + TEMPLATE_NAME, out var metadata) ? metadata : null;
 
     public bool Valid(ILogger logger)
     {
@@ -73,7 +73,7 @@ internal class TokenMetadata
 
     public void AddAttributes(IEnumerable<AttributeMetadata> attributes)
     {
-        foreach (AttributeMetadata data in attributes)
+        foreach (var data in attributes)
         {
             if (!Attributes.Contains(data))
             {
@@ -116,7 +116,7 @@ internal class TokenMetadata
             }
             else
             {
-                foreach (CreatorMetadata creator in Creators)
+                foreach (var creator in Creators)
                 {
                     if (!creator.Valid(logger))
                     {

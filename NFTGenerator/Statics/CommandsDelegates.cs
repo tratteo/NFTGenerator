@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NFTGenerator.Metadata;
-using NFTGenerator.Objects;
 using NFTGenerator.Services;
 using System;
 using System.Collections.Generic;
@@ -23,8 +22,8 @@ internal static class CommandsDelegates
 {
     public static void Verify(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
-        IConfiguration configuration = services.GetService<IConfiguration>();
-        string path = handler.GetPositional(0);
+        var configuration = services.GetService<IConfiguration>();
+        var path = handler.GetPositional(0);
         switch (path)
         {
             case "res":
@@ -60,7 +59,7 @@ internal static class CommandsDelegates
                 }
                 foreach (var data in metadata)
                 {
-                    if (Serializer.DeserializeJson<TokenMetadata>(string.Empty, data, out var nftData))
+                    if (Serializer.DeserializeJson<TokenMetadata>(data, out var nftData))
                     {
                         if (!nftData.Valid(logger))
                         {
@@ -77,7 +76,7 @@ internal static class CommandsDelegates
                 break;
 
             case "fs":
-                IFilesystem filesystem = services.GetService<IFilesystem>();
+                var filesystem = services.GetService<IFilesystem>();
                 filesystem.Verify();
                 break;
         }
@@ -86,15 +85,15 @@ internal static class CommandsDelegates
     public static void PrepareBatch(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
         List<(int index, Bitmap oldImage, TokenMetadata meta)> metadata = new List<(int, Bitmap, TokenMetadata)>();
-        string root = handler.GetPositional(0);
+        var root = handler.GetPositional(0);
         var metas = Directory.GetFiles(root, "*.json");
         logger.LogInformation("Found {amount} metadata", metas.Length);
-        int count = 0;
+        var count = 0;
         for (var i = 300; i < 1569; i++, count++)
         {
             logger.LogInformation("Editing {d}", i);
             var met = $"{root}\\{i}.json";
-            if (Serializer.DeserializeJson<TokenMetadata>(string.Empty, met, out var nftData))
+            if (Serializer.DeserializeJson<TokenMetadata>(met, out var nftData))
             {
                 if (!File.Exists($"{root}\\{nftData.Image}"))
                 {
@@ -105,10 +104,10 @@ internal static class CommandsDelegates
                 {
                     file.Uri = $"{count}.png";
                 }
-                FileInfo imageInfo = new FileInfo($"{root}\\{nftData.Image}");
+                var imageInfo = new FileInfo($"{root}\\{nftData.Image}");
                 imageInfo.MoveTo($"{root}\\{count}.png", false);
                 nftData.Image = $"{count}.png";
-                Serializer.SerializeJson<TokenMetadata>(string.Empty, $"{root}\\{count}.json", nftData);
+                Serializer.SerializeJson<TokenMetadata>($"{root}\\{count}.json", nftData);
                 File.Delete(met);
                 //metadata.Add((i, new Bitmap($"{root}\\{nftData.Image}"), nftData));
             }
@@ -138,14 +137,14 @@ internal static class CommandsDelegates
             logger.LogError("Unable to parse filter");
             return;
         }
-        using Bitmap bitmap = new Bitmap(handler.GetPositional(0));
+        using var bitmap = new Bitmap(handler.GetPositional(0));
         Media.ApplyFilter(bitmap, filter).Save(handler.GetPositional(1));
     }
 
     public static void RenameProgressively(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
-        int start = 0;
-        if (handler.GetKeyed("-si", out string startIndex))
+        var start = 0;
+        if (handler.GetKeyed("-si", out var startIndex))
         {
             try
             {
@@ -155,28 +154,29 @@ internal static class CommandsDelegates
             {
             }
         }
-        int counter = start;
-        bool usingPattern = handler.GetKeyed("-pm", out var pattern);
+        var counter = start;
+        var usingPattern = handler.GetKeyed("-pm", out var pattern);
         var files = usingPattern ? Directory.GetFiles(handler.GetPositional(0), pattern) : Directory.GetFiles(handler.GetPositional(0));
         var dirs = usingPattern ? Directory.GetDirectories(handler.GetPositional(0), pattern) : Directory.GetDirectories(handler.GetPositional(0));
-        for (int i = 0; i < dirs.Length; i++, counter++)
+        for (var i = 0; i < dirs.Length; i++, counter++)
         {
-            DirectoryInfo directoryInfo = new DirectoryInfo(dirs[i]);
-            (string path, string name) = PathExtensions.Split(directoryInfo.FullName);
+            var directoryInfo = new DirectoryInfo(dirs[i]);
+            var path = Path.GetDirectoryName(directoryInfo.FullName);
+            var name = Path.GetFileName(directoryInfo.FullName);
             if (directoryInfo.Name.Equals($"{counter}")) continue;
             directoryInfo.MoveTo($"{path}\\{counter}");
         }
-        for (int i = 0; i < files.Length; i++, counter++)
+        for (var i = 0; i < files.Length; i++, counter++)
         {
-            FileInfo fileInfo = new FileInfo(files[i]);
+            var fileInfo = new FileInfo(files[i]);
             fileInfo.MoveTo($"{fileInfo.Directory.FullName}\\{counter}{fileInfo.Extension}", true);
         }
     }
 
     public static void OpenPath(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
-        IConfiguration configuration = services.GetService<IConfiguration>();
-        IFilesystem filesystem = services.GetService<IFilesystem>();
+        var configuration = services.GetService<IConfiguration>();
+        var filesystem = services.GetService<IFilesystem>();
         switch (handler.GetPositional(0))
         {
             case "fs":
@@ -188,11 +188,11 @@ internal static class CommandsDelegates
                 break;
 
             case "layer":
-                if (handler.GetKeyed("-n", out string layerNumber))
+                if (handler.GetKeyed("-n", out var layerNumber))
                 {
-                    if (int.TryParse(layerNumber, out int layerId) && layerId >= 0 && layerId < filesystem.Layers.Count)
+                    if (int.TryParse(layerNumber, out var layerId) && layerId >= 0 && layerId < filesystem.Layers.Count)
                     {
-                        Layer layer = filesystem.Layers[layerId];
+                        var layer = filesystem.Layers[layerId];
                         Process.Start("explorer.exe", $"{Paths.LAYERS}{layer.Name}");
                     }
                 }
@@ -218,9 +218,9 @@ internal static class CommandsDelegates
 
     public static void PurgePath(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
-        IConfiguration configuration = services.GetService<IConfiguration>();
-        string path = handler.GetPositional(0);
-        bool force = handler.HasFlag("/f");
+        var configuration = services.GetService<IConfiguration>();
+        var path = handler.GetPositional(0);
+        var force = handler.HasFlag("/f");
         string answer;
         switch (path)
         {
@@ -266,10 +266,10 @@ internal static class CommandsDelegates
 
     public static void ScaleSerie(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
-        IConfiguration configuration = services.GetService<IConfiguration>();
-        IFilesystem filesystem = services.GetService<IFilesystem>();
+        var configuration = services.GetService<IConfiguration>();
+        var filesystem = services.GetService<IFilesystem>();
         logger.LogInformation("Are you sure you want to scale the serie number? (Y/N)", ConsoleColor.DarkYellow);
-        string answer = Console.ReadLine();
+        var answer = Console.ReadLine();
         if (!answer.ToLower().Equals("y"))
         {
             return;
@@ -287,16 +287,16 @@ internal static class CommandsDelegates
         }
         else
         {
-            int factor = 1;
+            var factor = 1;
             try
             {
                 factor = int.Parse(handler.GetPositional(0));
-                foreach (Layer layer in filesystem.Layers)
+                foreach (var layer in filesystem.Layers)
                 {
-                    foreach (Asset asset in layer.Assets)
+                    foreach (var asset in layer.Assets)
                     {
                         asset.Metadata.Amount *= factor;
-                        Serializer.SerializeJson($"{Paths.LAYERS}{layer.Name}\\", $"{asset.Id}.json", asset.Metadata);
+                        Serializer.SerializeJson($"{Paths.LAYERS}{layer.Name}\\{asset.Id}.json", asset.Metadata);
                     }
                 }
                 configuration["Generation:SerieCount"] = (configuration.GetValue<int>("Generation:SerieCount") * factor).ToString();
@@ -311,12 +311,12 @@ internal static class CommandsDelegates
 
     public static async Task Generate(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
-        IConfiguration configuration = services.GetService<IConfiguration>();
-        IFilesystem filesystem = services.GetService<IFilesystem>();
-        IGenerator generator = services.GetService<IGenerator>();
+        var configuration = services.GetService<IConfiguration>();
+        var filesystem = services.GetService<IFilesystem>();
+        var generator = services.GetService<IGenerator>();
         if (filesystem.Verify())
         {
-            int amountToMint = configuration.GetValue<int>("Generation:SerieCount");
+            var amountToMint = configuration.GetValue<int>("Generation:SerieCount");
             if (amountToMint == 0)
             {
                 logger.LogWarning("Nothing to generate, amount to mint is set to 0");
@@ -336,8 +336,8 @@ internal static class CommandsDelegates
 
     public static async Task QueryResults(ArgumentsHandler handler, IServiceProvider services, ILogger logger)
     {
-        IFilesystem filesystem = services.GetService<IFilesystem>();
-        IConfiguration configuration = services.GetService<IConfiguration>();
+        var filesystem = services.GetService<IFilesystem>();
+        var configuration = services.GetService<IConfiguration>();
         if (!Directory.Exists(Paths.RESULTS))
         {
             logger.LogWarning("There are no generated results");
@@ -359,14 +359,14 @@ internal static class CommandsDelegates
         {
             return;
         }
-        List<RarityMetadata> matches = new List<RarityMetadata>();
-        string pattern = handler.GetPositional(0);
+        var matches = new List<RarityMetadata>();
+        var pattern = handler.GetPositional(0);
         if (pattern.ToLower().Equals("max"))
         {
             RarityMetadata maxRarityMetadata = null;
             foreach (var file in files)
             {
-                if (Serializer.DeserializeJson<RarityMetadata>(string.Empty, file, out var rarityMetadata))
+                if (Serializer.DeserializeJson<RarityMetadata>(file, out var rarityMetadata))
                 {
                     if (maxRarityMetadata is null || maxRarityMetadata.Rarity < rarityMetadata.Rarity)
                     {
@@ -382,7 +382,7 @@ internal static class CommandsDelegates
             RarityMetadata minRarityMetadata = null;
             foreach (var file in files)
             {
-                if (Serializer.DeserializeJson<RarityMetadata>(string.Empty, file, out var rarityMetadata))
+                if (Serializer.DeserializeJson<RarityMetadata>(file, out var rarityMetadata))
                 {
                     if (minRarityMetadata is null || minRarityMetadata.Rarity > rarityMetadata.Rarity)
                     {
@@ -399,7 +399,7 @@ internal static class CommandsDelegates
             logger.LogWarning("No pattern provided");
             return;
         }
-        (int, int)[] layers = new (int, int)[splits.Length];
+        var layers = new (int, int)[splits.Length];
 
         for (var i = 0; i < splits.Length; i++)
         {
@@ -420,9 +420,9 @@ internal static class CommandsDelegates
 
         foreach (var file in files)
         {
-            if (Serializer.DeserializeJson<RarityMetadata>(string.Empty, file, out var rarityMetadata))
+            if (Serializer.DeserializeJson<RarityMetadata>(file, out var rarityMetadata))
             {
-                bool isMatch = true;
+                var isMatch = true;
                 foreach (var pair in layers)
                 {
                     //logger.LogInformation("{1}, {2}", pair.Item1, pair.Item2);
@@ -443,7 +443,7 @@ internal static class CommandsDelegates
         if (handler.HasFlag("/p"))
         {
             matches.Sort((m1, m2) => m1.Id.CompareTo(m2.Id));
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             foreach (var pair in matches)
             {
                 builder.Append($"Id: {pair.Id}{Environment.NewLine}");
@@ -455,15 +455,15 @@ internal static class CommandsDelegates
     public static void PurgeRecursive(string path, ILogger logger = null)
     {
         var amount = 0;
-        DirectoryInfo dInfo = new DirectoryInfo(path);
-        foreach (FileInfo file in dInfo.EnumerateFiles())
+        var dInfo = new DirectoryInfo(path);
+        foreach (var file in dInfo.EnumerateFiles())
         {
             amount++;
             file.Delete();
         }
         logger?.LogInformation($"Deleted {amount} files");
         amount = 0;
-        foreach (DirectoryInfo dir in dInfo.EnumerateDirectories())
+        foreach (var dir in dInfo.EnumerateDirectories())
         {
             amount++;
             dir.Delete(true);
