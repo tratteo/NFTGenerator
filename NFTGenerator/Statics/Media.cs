@@ -133,7 +133,7 @@ internal static class Media
     private static Bitmap ApplyGlitchFilter(Bitmap image)
     {
         Random r = new Random(image.GetHashCode());
-        int shiftAmount = r.Next(5, 15);
+        int shiftAmount = r.Next(10, 18);
         Bitmap res = new Bitmap(1000, 1000);
         //base blue layer
         BluShift(image, res, shiftAmount);
@@ -144,7 +144,7 @@ internal static class Media
         //horizontal shift lines
         int lines = r.Next(2, 8);
 
-        return ApplyShiftFilter(res, 30, 150, 50, 100, lines);
+        return ApplyShiftFilter(res, 30, 150, 10, 25, lines);
     }
 
     #region Color Shift
@@ -239,6 +239,7 @@ internal static class Media
     /// <param name="lowerBound"> lower bound for the row's shift amount </param>
     /// <param name="upperBound"> upper bound for the row's shift amount </param>
     private static int GetRandomShift(Random r, int lowerBound, int upperBound) => r.Next(0, 2) == 0 ? r.Next(lowerBound, upperBound) : r.Next(1000 - upperBound, 1000 - lowerBound);
+
     private static Bitmap ShiftHorizontal(Bitmap image, Bitmap res, Random r, int range, int shift, int position)
     {
         for (int i = 0; i < range; i++)
@@ -262,16 +263,10 @@ internal static class Media
         }
         return res;
     }
-    private static Bitmap ShiftSingleLine(Bitmap image, Bitmap res, Random r, int shift, int lower, int upper)
-    {
-        int range = r.Next(lower, upper);
-        int w = image.Width;
-        int position = r.Next(150, 850);// height range in which shifts are performed
 
-        //horizontal
-        ShiftHorizontal(image,res,r, range, shift, position);
-        //vertical shift
-        for (int i = 0; i < w; i++)
+    private static Bitmap ShiftVertical(Bitmap image, Bitmap res, Random r, int range, int shift, int position)
+    {
+        for (int i = 0; i < image.Height; i++)
         {
             for (int j = 0; j < range; j++)
             {
@@ -292,6 +287,21 @@ internal static class Media
         }
         return res;
     }
-    
+
+    private static Bitmap ShiftSingleLine(Bitmap image, Bitmap res, Random r, int shift, int lower, int upper)
+    {
+        int range = r.Next(lower, upper);
+        int position = r.Next(150, 850);// height range in which shifts are performed
+
+        //horizontal
+        if (r.Next(0, 2) == 0)
+            ShiftHorizontal(image, res, r, range, shift, position);
+        else
+            ShiftVertical(image, res, r, range, shift, position);
+        //vertical shift
+
+        return res;
+    }
+
     #endregion slice Shift
 }
