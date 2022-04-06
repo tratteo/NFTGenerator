@@ -144,7 +144,7 @@ internal static class Media
         //horizontal shift lines
         int lines = r.Next(2, 8);
 
-        return ApplyShiftFilter(res, 30, 150, 8, 25, lines);
+        return ApplyShiftFilter(res, 30, 150, 50, 100, lines);
     }
 
     #region Color Shift
@@ -239,19 +239,15 @@ internal static class Media
     /// <param name="lowerBound"> lower bound for the row's shift amount </param>
     /// <param name="upperBound"> upper bound for the row's shift amount </param>
     private static int GetRandomShift(Random r, int lowerBound, int upperBound) => r.Next(0, 2) == 0 ? r.Next(lowerBound, upperBound) : r.Next(1000 - upperBound, 1000 - lowerBound);
-
-    private static Bitmap ShiftSingleLine(Bitmap image, Bitmap res, Random r, int shift, int lower, int upper)
+    private static Bitmap ShiftHorizontal(Bitmap image, Bitmap res, Random r, int range, int shift, int position)
     {
-        int h = r.Next(lower, upper);
-        int w = image.Width;
-        int position = r.Next(150, 850);// height range in which shifts are performed
-        for (int i = 0; i < h; i++)
+        for (int i = 0; i < range; i++)
         {
             if (i + position >= image.Height)
             {
                 break;
             }
-            for (int j = 0; j < w; j++)
+            for (int j = 0; j < image.Width; j++)
             {
                 Color c = image.GetPixel(j, i + position);
                 if (j + shift < image.Width)
@@ -266,6 +262,36 @@ internal static class Media
         }
         return res;
     }
+    private static Bitmap ShiftSingleLine(Bitmap image, Bitmap res, Random r, int shift, int lower, int upper)
+    {
+        int range = r.Next(lower, upper);
+        int w = image.Width;
+        int position = r.Next(150, 850);// height range in which shifts are performed
 
+        //horizontal
+        ShiftHorizontal(image,res,r, range, shift, position);
+        //vertical shift
+        for (int i = 0; i < w; i++)
+        {
+            for (int j = 0; j < range; j++)
+            {
+                Color c = image.GetPixel(j + position, i);
+                if (j + position >= image.Width)
+                {
+                    break;
+                }
+                if (i + shift < image.Width)
+                {
+                    res.SetPixel(j + position, i + shift, c);
+                }
+                else
+                {
+                    res.SetPixel(j + position, i + shift - image.Width, c);
+                }
+            }
+        }
+        return res;
+    }
+    
     #endregion slice Shift
 }
