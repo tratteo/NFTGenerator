@@ -14,8 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<GenerationSettings>(builder.Configuration.GetSection(GenerationSettings.Position));
 builder.Services.AddTransient<IGenerator, Generator>();
 builder.Services.AddSingleton<IFilesystem, Filesystem>();
-builder.Services.AddSingleton<CommandLineService>();
+
+builder.Services.AddHostedService<CommandLineService>();
 
 var app = builder.Build();
-var cmd = app.Services.GetRequiredService<CommandLineService>();
-await cmd.Run();
+await app.RunAsync();
