@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using NFTGenerator.Services;
 using NFTGenerator.Settings;
+using NFTGenerator.Statics;
 using System;
+using System.Threading;
 
 Console.Title = "NFT Generator";
 Logger.ConsoleInstance.LogInfo("----- NFT GENERATOR -----\n\n", ConsoleColor.DarkCyan);
@@ -15,7 +17,7 @@ builder.Services.Configure<GenerationSettings>(builder.Configuration.GetSection(
 builder.Services.AddTransient<IGenerator, Generator>();
 builder.Services.AddSingleton<IFilesystem, Filesystem>();
 
-builder.Services.AddHostedService<CommandLineService>();
+builder.Services.AddOfflineRunner<CommandLineService>();
 
 var app = builder.Build();
-await app.RunAsync();
+await app.RunOfflineAsync(CancellationToken.None);

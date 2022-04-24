@@ -2,7 +2,6 @@
 
 using HandierCli;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
@@ -10,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace NFTGenerator.Services;
 
-public class CommandLineService : IHostedService
+public class CommandLineService : IRunner
 {
     private readonly IServiceProvider services;
 
@@ -25,13 +24,7 @@ public class CommandLineService : IHostedService
         BuildCli();
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
-    {
-        Cli.Run();
-        return Task.CompletedTask;
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task RunAsync(CancellationToken cancellationToken) => Cli.Run();
 
     private void BuildCli()
     {
