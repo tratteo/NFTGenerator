@@ -115,7 +115,7 @@ internal class Filesystem : IFilesystem
             }
             else if (amount > serieAmount)
             {
-                warnings.Add($"Assets sum in layer: {layer.Name} is greater than the SERIE_AMOUNT");
+                warnings.Add($"Assets sum in layer: {layer.Name} is greater than the SERIE_AMOUNT: {amount}");
             }
             assetsCount += layer.Assets.Count;
         }
