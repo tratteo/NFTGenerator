@@ -134,7 +134,7 @@ internal static class Media
     {
         Random r = new Random(image.GetHashCode());
         int shiftAmount = r.Next(10, 18);
-        Bitmap res = new Bitmap(1000, 1000);
+        Bitmap res = new Bitmap(image.Width, image.Height);
         //base blue layer
         BluShift(image, res, shiftAmount);
         //green shifted layer
@@ -234,7 +234,7 @@ internal static class Media
     #region slice Shift
 
     /// <summary>
-    ///   Method <c> GetRandomShift </c> Decides wheter to shift left or right than picks the amount
+    ///   Method <c> GetRandomShift </c> Decides wheter to shift left or right than picks the amount randomly
     /// </summary>
     /// <param name="lowerBound"> lower bound for the row's shift amount </param>
     /// <param name="upperBound"> upper bound for the row's shift amount </param>
