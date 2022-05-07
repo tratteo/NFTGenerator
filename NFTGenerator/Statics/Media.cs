@@ -109,8 +109,8 @@ internal static class Media
 
     private static Bitmap ApplyRgbShiftFilter(Bitmap image)
     {
-        Random r = new Random(image.GetHashCode());
-        int shiftAmount = r.Next(10, 18);
+        Random r = new Random(image.GetHashCode() * (int)DateTime.Now.Ticks);
+        int shiftAmount = r.Next(4, 10);
         Bitmap res = new Bitmap(image.Width, image.Height);
         //base blue layer
         BluShift(image, res, shiftAmount);
@@ -151,7 +151,7 @@ internal static class Media
 
     private static Bitmap ApplyGlitchFilter(Bitmap image)
     {
-        Random r = new Random(image.GetHashCode());
+        Random r = new Random(image.GetHashCode() * (int)DateTime.Now.Ticks);
         var res = ApplyRgbShiftFilter(image);
         //horizontal shift lines
         int lines = r.Next(2, 8);
