@@ -15,6 +15,7 @@ internal static class Media
         VideoDegradation,
         RgbShift,
         SliceShift,
+        Glitch,
         VideoD_RgbShift
     }
 
@@ -68,13 +69,16 @@ internal static class Media
                 return ApplyVideoDegradationFilter(bitmap);
 
             case Filter.RgbShift:
-                return ApplyGlitchFilter(bitmap);
+                return ApplyRgbShiftFilter(bitmap);
 
             case Filter.SliceShift:
                 return ApplyShiftFilter(bitmap);
 
             case Filter.VideoD_RgbShift:
                 return ApplyGlitchFilter(ApplyVideoDegradationFilter(bitmap));
+
+            case Filter.Glitch:
+                return ApplyGlitchFilter(bitmap);
         }
         return null;
     }
@@ -89,18 +93,33 @@ internal static class Media
     /// <param name="shiftAmountUpper"> upper bound for the row's shift amount </param>
     /// <param name="nShifts"> Number of shifts to perform on the Image </param>
     /// <returns> </returns>
-    private static Bitmap ApplyShiftFilter(Bitmap image, int lower = 30, int upper = 60, int shiftAmountLower = 20, int shiftAmountUpper = 100, int nShifts = 4)
+    private static Bitmap ApplyShiftFilter(Bitmap image, int lower = 30, int upper = 60, int shiftAmountLower = 20, int shiftAmountUpper = 100, int nShifts = 4, int rowPosPercentage = 15)
     {
         Bitmap test = new Bitmap(image);
 
-        Random r = new Random(image.GetHashCode() * image.GetPixel(lower, upper).R);
+        Random r = new Random(image.GetHashCode() * (int)DateTime.Now.Ticks);
 
         for (int i = 0; i < nShifts; i++)
         {
             var shift = GetRandomShift(r, shiftAmountLower, shiftAmountUpper);
-            ShiftSingleLine(image, test, r, shift, lower, upper);
+            ShiftSingleLine(image, test, r, shift, lower, upper, rowPosPercentage);
         }
         return test;
+    }
+
+    private static Bitmap ApplyRgbShiftFilter(Bitmap image)
+    {
+        Random r = new Random(image.GetHashCode());
+        int shiftAmount = r.Next(10, 18);
+        Bitmap res = new Bitmap(image.Width, image.Height);
+        //base blue layer
+        BluShift(image, res, shiftAmount);
+        //green shifted layer
+        GreenShift(image, res, shiftAmount);
+        //red shifted layer
+        RedShift(image, res, shiftAmount);
+        //horizontal shift lines
+        return res;
     }
 
     private static Bitmap ApplyVideoDegradationFilter(Bitmap bitmap, int strenght = 15, int width = 3)
@@ -133,18 +152,10 @@ internal static class Media
     private static Bitmap ApplyGlitchFilter(Bitmap image)
     {
         Random r = new Random(image.GetHashCode());
-        int shiftAmount = r.Next(10, 18);
-        Bitmap res = new Bitmap(image.Width, image.Height);
-        //base blue layer
-        BluShift(image, res, shiftAmount);
-        //green shifted layer
-        GreenShift(image, res, shiftAmount);
-        //red shifted layer
-        RedShift(image, res, shiftAmount);
+        var res = ApplyRgbShiftFilter(image);
         //horizontal shift lines
         int lines = r.Next(2, 8);
-
-        return ApplyShiftFilter(res, 30, 150, 10, 25, lines);
+        return ApplyShiftFilter(res, 30, 150, 10, 25, lines, 15);
     }
 
     #region Color Shift
@@ -170,25 +181,26 @@ internal static class Media
             for (int j = 0; j < image.Width; j++)
             {
                 Color pixel = image.GetPixel(j, i);
-
-                if (i + shiftAmount < image.Height && j + shiftAmount < image.Width)
+                var x = j + shiftAmount;
+                var y = i + shiftAmount;
+                if (x < image.Width && y < image.Height)
                 {
-                    pixel1 = image.GetPixel(j + shiftAmount, i + shiftAmount);
-                    res.SetPixel(j + shiftAmount, i + shiftAmount, Color.FromArgb(pixel.A, 0, pixel1.G, pixel.B));
+                    pixel1 = image.GetPixel(x, y);
+                    res.SetPixel(x, y, Color.FromArgb(pixel.A, 0, pixel1.G, pixel.B));
                 }
-                else if (j + shiftAmount >= image.Width && i + shiftAmount < image.Width)
+                else if (x >= image.Width && y < image.Height)
                 {
-                    pixel1 = image.GetPixel(j, i + shiftAmount);
-                    res.SetPixel(j + shiftAmount - image.Width, i + shiftAmount, Color.FromArgb(pixel.A, 0, pixel1.G, pixel.B));
+                    pixel1 = image.GetPixel(j, y);
+                    res.SetPixel(x % image.Width, y, Color.FromArgb(pixel.A, 0, pixel1.G, pixel.B));
                 }
-                else if (j + shiftAmount < image.Width && i + shiftAmount >= image.Width)
+                else if (x < image.Width && y >= image.Height)
                 {
-                    pixel1 = image.GetPixel(j + shiftAmount, i);
-                    res.SetPixel(j + shiftAmount, i + shiftAmount - image.Width, Color.FromArgb(pixel.A, 0, pixel1.G, pixel.B));
+                    pixel1 = image.GetPixel(x, i);
+                    res.SetPixel(x, y % image.Height, Color.FromArgb(pixel.A, 0, pixel1.G, pixel.B));
                 }
-                else if (j + shiftAmount >= image.Width && i + shiftAmount >= image.Width)
+                else if (x >= image.Width && y >= image.Height)
                 {
-                    res.SetPixel(j + shiftAmount - image.Width, i + shiftAmount - image.Width, Color.FromArgb(pixel.A, 0, pixel.G, pixel.B));
+                    res.SetPixel(x % image.Width, y % image.Height, Color.FromArgb(pixel.A, 0, pixel.G, pixel.B));
                 }
             }
         }
@@ -203,25 +215,27 @@ internal static class Media
             for (int j = 0; j < image.Width; j++)
             {
                 Color pixel = res.GetPixel(j, i);//blue + green
-                if (i + shiftAmount < image.Width && j + shiftAmount < image.Width)
+                var x = j + shiftAmount;
+                var y = i + shiftAmount;
+                if (y < image.Height && x < image.Width)
                 {
-                    pixel1 = image.GetPixel(j + shiftAmount, i + shiftAmount); //red
+                    pixel1 = image.GetPixel(x, y); //red
                     res.SetPixel(j, i, Color.FromArgb(pixel.A, pixel1.R, pixel.G, pixel.B));
                 }
-                else if (i + shiftAmount < image.Width && j + shiftAmount >= image.Width)
+                else if (y < image.Height && x >= image.Width)
                 {
-                    pixel1 = image.GetPixel(j + shiftAmount - image.Width, i + shiftAmount);
+                    pixel1 = image.GetPixel(x % image.Width, y);
                     res.SetPixel(j, i, Color.FromArgb(pixel1.A, pixel1.R, pixel.G, pixel.B));
                 }
-                else if (i + shiftAmount >= image.Width && j + shiftAmount < image.Width)
+                else if (y >= image.Height && x < image.Width)
                 {
-                    pixel1 = image.GetPixel(j + shiftAmount, i + shiftAmount - image.Width);
+                    pixel1 = image.GetPixel(x, y % image.Height);
 
                     res.SetPixel(j, i, Color.FromArgb(pixel1.A, pixel1.R, pixel.G, pixel.B));
                 }
-                else if (i + shiftAmount >= image.Width && j + shiftAmount >= image.Width)
+                else if (y >= image.Height && x >= image.Width)
                 {
-                    pixel1 = image.GetPixel(j + shiftAmount - image.Width, i + shiftAmount - image.Width);
+                    pixel1 = image.GetPixel(x % image.Width, y % image.Height);
                     res.SetPixel(j, i, Color.FromArgb(pixel1.A, pixel1.R, pixel.G, pixel.B));
                 }
             }
@@ -244,20 +258,22 @@ internal static class Media
     {
         for (int i = 0; i < range; i++)
         {
-            if (i + position >= image.Height)
+            var y = i + position;
+            if (y >= image.Height)
             {
                 break;
             }
             for (int j = 0; j < image.Width; j++)
             {
-                Color c = image.GetPixel(j, i + position);
-                if (j + shift < image.Width)
+                Color c = image.GetPixel(j, y);
+                var x = j + shift;
+                if (x < image.Width)
                 {
-                    res.SetPixel(j + shift, i + position, c);
+                    res.SetPixel(x, y, c);
                 }
                 else
                 {
-                    res.SetPixel(j + shift - image.Width, i + position, c);
+                    res.SetPixel(x % image.Width, y, c);
                 }
             }
         }
@@ -270,34 +286,44 @@ internal static class Media
         {
             for (int j = 0; j < range; j++)
             {
-                Color c = image.GetPixel(j + position, i);
-                if (j + position >= image.Width)
+                var x = j + position;
+                var y = i + shift;
+                if (x >= image.Width)
                 {
                     break;
                 }
-                if (i + shift < image.Width)
+                Color c = image.GetPixel(j + position, i);
+                if (y < image.Height)
                 {
-                    res.SetPixel(j + position, i + shift, c);
+                    res.SetPixel(x, y, c);
                 }
                 else
                 {
-                    res.SetPixel(j + position, i + shift - image.Width, c);
+                    res.SetPixel(x, y % image.Height, c);
                 }
             }
         }
         return res;
     }
 
-    private static Bitmap ShiftSingleLine(Bitmap image, Bitmap res, Random r, int shift, int lower, int upper)
+    private static Bitmap ShiftSingleLine(Bitmap image, Bitmap res, Random r, int shift, int lower, int upper, int position)
     {
         int range = r.Next(lower, upper);
-        int position = r.Next(150, 850);// height range in which shifts are performed
+        // position = height range in which shifts are performed in percentual
 
         //horizontal
         if (r.Next(0, 2) == 0)
+        {
+            var pos = (image.Height * position / 100);
+            position = r.Next(pos, image.Height - pos);
             ShiftHorizontal(image, res, r, range, shift, position);
+        }
         else
+        {
+            var pos = (image.Width * position / 100);
+            position = r.Next(pos, image.Width - pos);
             ShiftVertical(image, res, r, range, shift, position);
+        }
         //vertical shift
 
         return res;
